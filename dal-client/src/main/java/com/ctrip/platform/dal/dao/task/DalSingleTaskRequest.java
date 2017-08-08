@@ -10,6 +10,7 @@ import java.util.concurrent.Callable;
 
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.ResultMerger;
+import com.ctrip.platform.dal.dao.client.CostRecorder;
 import com.ctrip.platform.dal.dao.client.DalWatcher;
 import com.ctrip.platform.dal.exceptions.DalException;
 import com.ctrip.platform.dal.exceptions.ErrorCode;
@@ -90,12 +91,14 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]>{
 		private List<Map<String, ?>> daoPojos;
 		private List<T> rawPojos;
 		private SingleTask<T> task;
+		private CostRecorder costRecorder = new CostRecorder();
 
 		public SingleTaskCallable(DalHints hints, List<Map<String, ?>> daoPojos, List<T> rawPojos, SingleTask<T> task){
 			this.hints = hints;
 			this.daoPojos = daoPojos;
 			this.rawPojos = rawPojos;
 			this.task = task;
+			costRecorder.begin();
 		}
 
 		@Override
@@ -103,7 +106,6 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]>{
 			int[] counts = new int[daoPojos.size()];
 			DalHints localHints = hints.clone();// To avoid shard id being polluted by each pojos
 			for (int i = 0; i < daoPojos.size(); i++) {
-				DalWatcher.begin();// TODO check if we needed
 				try {
 					counts[i] = task.execute(localHints, daoPojos.get(i), rawPojos.get(i));
 				} catch (SQLException e) {

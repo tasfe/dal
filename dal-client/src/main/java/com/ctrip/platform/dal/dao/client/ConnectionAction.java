@@ -40,6 +40,8 @@ public abstract class ConnectionAction<T> {
 	
 	public DalLogger logger = DalClientFactory.getDalLogger();
 	public LogEntry entry;
+	public CostRecorder costRecorder;
+
 	
 	void populate(DalEventEnum operation, String sql, StatementParameters parameters) {
 		this.operation = operation;
@@ -141,6 +143,22 @@ public abstract class ConnectionAction<T> {
 		handleException(e);
 	}
 
+	public void beginExecute() {
+	    costRecorder.beginExecute();
+	}
+	
+	public void endExectue() {
+	    costRecorder.endExectue();
+	}
+	
+	public void beginConnect() {
+	    costRecorder.beginConnect();
+	}
+	
+	public void endConnect() {
+	    costRecorder.endConnect();
+	}
+	
 	private void log(Object result, Throwable e) {
 		try {
 			entry.setDuration(System.currentTimeMillis() - start);

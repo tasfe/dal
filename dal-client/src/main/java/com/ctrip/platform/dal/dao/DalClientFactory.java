@@ -75,8 +75,6 @@ public class DalClientFactory {
                 logger.info("Successfully initialized Dal Java Client Factory with " + path);
             }
 
-            // TO BE removed
-            DalWatcher.init();
             DalRequestExecutor.init(config.getFacory().getProperty(DalRequestExecutor.MAX_POOL_SIZE));
             DalStatusManager.initialize(config);
 
@@ -153,7 +151,6 @@ public class DalClientFactory {
 
                 DalStatusManager.shutdown();
 
-                DalWatcher.destroy();
                 logger.info("DalWatcher has been destoryed");
             } catch (Throwable e) {
                 logger.error("Error during shutdown", e);

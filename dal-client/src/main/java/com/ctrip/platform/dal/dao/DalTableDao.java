@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
-import com.ctrip.platform.dal.dao.client.DalWatcher;
 import com.ctrip.platform.dal.dao.helper.DalDefaultJpaParser;
 import com.ctrip.platform.dal.dao.sqlbuilder.BaseTableSelectBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.DeleteSqlBuilder;
@@ -189,7 +188,6 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 * @throws SQLException
 	 */
 	public List<T> query(TableSelectBuilder selectBuilder, DalHints hints) throws SQLException {
-		DalWatcher.begin();
 		return commonQuery((TableSelectBuilder)selectBuilder.mapWith(parser).nullable(), hints);
 	}
 
@@ -206,7 +204,6 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 * @throws SQLException
 	 */
 	public <K> List<K> query(TableSelectBuilder selectBuilder, DalHints hints, Class<K> clazz) throws SQLException {
-		DalWatcher.begin();
 		return commonQuery((TableSelectBuilder)selectBuilder.mapWith(clazz).nullable(), hints);
 	}
 
@@ -234,7 +231,6 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 * @throws SQLException
 	 */
 	public T queryObject(TableSelectBuilder selectBuilder, DalHints hints) throws SQLException {
-		DalWatcher.begin();
 		return commonQuery((TableSelectBuilder)selectBuilder.mapWith(parser), hints);
 	}
 	
@@ -247,7 +243,6 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	 * @throws SQLException
 	 */
 	public <K> K queryObject(TableSelectBuilder selectBuilder, DalHints hints, Class<K> clazz) throws SQLException {
-		DalWatcher.begin();
 		return commonQuery((TableSelectBuilder)selectBuilder.mapWith(clazz), hints);
 	}
 
@@ -257,7 +252,6 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	
 	//Assume selectCount() is already invoked
 	public Number count(TableSelectBuilder selectBuilder, DalHints hints) throws SQLException {
-		DalWatcher.begin();
 		return commonQuery(selectBuilder, hints);
 	}
 
@@ -297,7 +291,6 @@ public final class DalTableDao<T> extends TaskAdapter<T> {
 	public List<T> queryFrom(String whereClause,
 			StatementParameters parameters, DalHints hints, int start, int count)
 			throws SQLException {
-		DalWatcher.begin();
 		return query(new BaseTableSelectBuilder().where(whereClause).with(parameters).range(start, count), hints);
 	}
 

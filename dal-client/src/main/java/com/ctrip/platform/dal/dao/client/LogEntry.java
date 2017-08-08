@@ -31,6 +31,7 @@ public class LogEntry {
 	private Throwable exception;
 	
 	private long createTime = System.currentTimeMillis();
+	private CostRecorder costRecorder;
 	
 	public LogEntry(){
 		StackTraceElement[] callers = Thread.currentThread().getStackTrace();
@@ -243,7 +244,15 @@ public class LogEntry {
 		this.createTime = createTime;
 	}
 
-	public int getSqlSize() {
+	public void setCostRecorder(CostRecorder costRecorder) {
+        this.costRecorder = costRecorder;
+    }
+
+    public CostRecorder getCostRecorder() {
+        return costRecorder;
+    }
+
+    public int getSqlSize() {
 		int size = 0;
 		if (this.event == DalEventEnum.QUERY
 				|| this.event == DalEventEnum.UPDATE_SIMPLE

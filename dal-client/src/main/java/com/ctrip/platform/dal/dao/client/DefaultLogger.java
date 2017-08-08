@@ -1,7 +1,5 @@
 package com.ctrip.platform.dal.dao.client;
 
-import java.util.Map;
-
 import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,7 +146,7 @@ public class DefaultLogger extends LoggerAdapter implements DalLogger {
 			} else {
 				msg.append("\t").append("parameters : ").append(LINESEPARATOR);
 			}
-			msg.append("\t").append("CostDetail : ").append(DalWatcher.toJson()).append(LINESEPARATOR);
+			msg.append("\t").append("CostDetail : ").append(entry.getCostRecorder().toJson()).append(LINESEPARATOR);
 			msg.append("\t").append("SQL.database : ").append(entry.getDbUrl()).append(LINESEPARATOR);
 			logger.info(msg.toString());
 		} catch (Throwable e) {

@@ -50,9 +50,9 @@ public class DalDirectClient implements DalClient {
 				conn = getConnection(hints, this);
 				
 				preparedStatement = createPreparedStatement(conn, sql, parameters, hints);
-				DalWatcher.beginExecute();
+				beginExecute();
 				rs = preparedStatement.executeQuery();
-				DalWatcher.endExectue();
+				endExectue();
 				
 				if(extractor instanceof HintsAwareExtractor)
 				    return ((DalResultSetExtractor<T>)((HintsAwareExtractor)extractor).extractWith(hints)).extract(rs);
@@ -74,7 +74,7 @@ public class DalDirectClient implements DalClient {
 				conn = getConnection(hints, this);
 				preparedStatement = createPreparedStatement(conn, sql, parameters, hints);
 				List<Object> result = new ArrayList<>();
-				DalWatcher.beginExecute();
+				beginExecute();
 
 				preparedStatement.execute();
 				for(DalResultSetExtractor<?> extractor: extractors) {
@@ -88,7 +88,7 @@ public class DalDirectClient implements DalClient {
 	                preparedStatement.getMoreResults();
 				}
 
-				DalWatcher.endExectue();
+				endExectue();
 				
 				return result;
 			}
@@ -113,9 +113,9 @@ public class DalDirectClient implements DalClient {
 				else
 					preparedStatement = createPreparedStatement(conn, sql, parameters, hints, generatedKeyHolder);
 				
-				DalWatcher.beginExecute();
+				beginExecute();
 				int rows = preparedStatement.executeUpdate();
-				DalWatcher.endExectue();
+				endExectue();
 				
 				if(generatedKeyHolder == null)
 					return rows;
@@ -147,9 +147,9 @@ public class DalDirectClient implements DalClient {
 				for(String sql: sqls)
 					statement.addBatch(sql);
 				
-				DalWatcher.beginExecute();
+				beginExecute();
 				int[] ret = statement.executeBatch();
-				DalWatcher.endExectue();
+				endExectue();
 				
 				return ret;
 			}
@@ -169,9 +169,9 @@ public class DalDirectClient implements DalClient {
 				
 				statement = createPreparedStatement(conn, sql, parametersList, hints);
 				
-				DalWatcher.beginExecute();
+				beginExecute();
 				int[] ret =  statement.executeBatch();
-				DalWatcher.endExectue();
+				endExectue();
 				
 				return ret;
 			}
@@ -240,11 +240,11 @@ public class DalDirectClient implements DalClient {
 				
 				callableStatement = createCallableStatement(conn, callString, parameters, hints);
 				
-				DalWatcher.beginExecute();
+				beginExecute();
 				boolean retVal = callableStatement.execute();
 				int updateCount = callableStatement.getUpdateCount();
 				
-				DalWatcher.endExectue();
+				endExectue();
 				
 				Map<String, Object> returnedResults = new LinkedHashMap<String, Object>();
 				if (retVal || updateCount != -1) {
@@ -270,9 +270,9 @@ public class DalDirectClient implements DalClient {
 				
 				callableStatement = createCallableStatement(conn, callString, parametersList, hints);
 
-				DalWatcher.beginExecute();
+				beginExecute();
 				int[] ret =  callableStatement.executeBatch();
-				DalWatcher.endExectue();
+				endExectue();
 				
 				return ret;
 			}
@@ -370,12 +370,12 @@ public class DalDirectClient implements DalClient {
 	}
 	
 	public Connection getConnection(DalHints hints, ConnectionAction<?> action) throws SQLException {
-		DalWatcher.beginConnect();
+	    action.beginConnect();
 
 		action.connHolder = transManager.getConnection(hints, action.operation);
 		Connection conn = action.connHolder.getConn();
 
-		DalWatcher.endConnect();
+		action.endConnect();
 		return conn;
 	}
 	
