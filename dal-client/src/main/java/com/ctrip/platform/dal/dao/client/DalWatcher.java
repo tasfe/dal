@@ -1,6 +1,7 @@
 package com.ctrip.platform.dal.dao.client;
 
 public class DalWatcher {
+    //TODO make it not threadlocal
 	private static ThreadLocal<CostRecorder> costRecorder = new ThreadLocal<CostRecorder>();
 	
 	private static final String JSON_PATTERN = "{'Decode':'%s','Connect':'%s','Prepare':'%s','Excute':'%s','ClearUp':'%s'}";
