@@ -20,7 +20,6 @@ import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.ResultMerger;
 import com.ctrip.platform.dal.dao.StatementParameter;
 import com.ctrip.platform.dal.dao.StatementParameters;
-import com.ctrip.platform.dal.dao.client.CostRecorder;
 import com.ctrip.platform.dal.dao.client.DalLogger;
 import com.ctrip.platform.dal.dao.helper.DalShardingHelper;
 import com.ctrip.platform.dal.dao.sqlbuilder.SqlBuilder;
@@ -36,7 +35,6 @@ public class DalSqlTaskRequest<T> implements DalRequest<T>{
 	private ResultMerger<T> merger;
 	private Set<String> shards;
 	private Map<String, List<?>> parametersByShard;
-	private CostRecorder costRecorder;
 	
 	public DalSqlTaskRequest(String logicDbName, SqlBuilder builder, DalHints hints, SqlTask<T> task, ResultMerger<T> merger)
 			 throws SQLException {
@@ -48,9 +46,6 @@ public class DalSqlTaskRequest<T> implements DalRequest<T>{
 		this.task = task;
 		this.merger = merger;
 		shards = getShards();
-		
-		costRecorder = new CostRecorder();
-		costRecorder.begin();
 	}
 	
 	@Override

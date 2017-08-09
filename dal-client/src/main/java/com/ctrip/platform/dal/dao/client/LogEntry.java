@@ -30,10 +30,11 @@ public class LogEntry {
 
 	private Throwable exception;
 	
-	private long createTime = System.currentTimeMillis();
-	private CostRecorder costRecorder;
+	private CostRecorder costRecorder = new CostRecorder();
 	
 	public LogEntry(){
+	    costRecorder.begin();
+	    
 		StackTraceElement[] callers = Thread.currentThread().getStackTrace();
 		for (int i = 4; i < callers.length; i++) {
 			StackTraceElement caller = callers[i];
@@ -235,18 +236,6 @@ public class LogEntry {
 	public void setClientVersion(String clientVersion) {
 		this.clientVersion = clientVersion;
 	}
-	
-	public long getCreateTime() {
-		return createTime;
-	}
-
-	public void setCreateTime(long createTime) {
-		this.createTime = createTime;
-	}
-
-	public void setCostRecorder(CostRecorder costRecorder) {
-        this.costRecorder = costRecorder;
-    }
 
     public CostRecorder getCostRecorder() {
         return costRecorder;

@@ -119,15 +119,9 @@ public class DalRequestExecutor {
 	}
 	
 	private <T> T crossShardExecute(DalHints hints, DalRequest<T> request) throws SQLException {
-		DalWatcher.crossShardBegin();
-		
-		T result = hints.is(DalHintEnum.sequentialExecution)?
+		return hints.is(DalHintEnum.sequentialExecution)?
 				seqncialExecute(hints, request):
 				parallelExecute(hints, request);
-		
-		DalWatcher.crossShardEnd();
-		return result;
-			
 	}
 
 	private <T> void handleCallback(final DalHints hints, T result, Throwable error) {
