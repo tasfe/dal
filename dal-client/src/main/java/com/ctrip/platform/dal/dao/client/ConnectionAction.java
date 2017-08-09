@@ -142,19 +142,19 @@ public abstract class ConnectionAction<T> {
 	}
 
 	public void beginExecute() {
-	    entry.getCostRecorder().beginExecute();
+	    entry.beginExecute();
 	}
 	
 	public void endExectue() {
-	    entry.getCostRecorder().endExectue();
+	    entry.endExectue();
 	}
 	
 	public void beginConnect() {
-	    entry.getCostRecorder().beginConnect();
+	    entry.beginConnect();
 	}
 	
 	public void endConnect() {
-	    entry.getCostRecorder().endConnect();
+	    entry.endConnect();
 	}
 	
 	private void log(Object result, Throwable e) {
