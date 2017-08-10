@@ -9,4 +9,22 @@ public abstract class AbstractRWSeparationStrategy implements DalShardingStrateg
 			DalHints hints) {
 		return false;
 	}
+	
+	/**
+	 * This method is a default implementation old interface defined in DalShardingStrategy
+	 * @param configure
+	 * @param logicDbName
+	 * @param hints
+	 * @return
+	 */
+	public String locateTableShard(DalConfigure configure, String logicDbName, DalHints hints) {
+	    return null;
+	}
+	
+	/**
+	 * Call the old way of getting table shard id to make sure subclass compiles ok.
+	 */
+	public String locateTableShard(DalConfigure configure, String logicDbName, String tabelName, DalHints hints) {
+	    return locateTableShard(configure, logicDbName, hints);
+	}
 }

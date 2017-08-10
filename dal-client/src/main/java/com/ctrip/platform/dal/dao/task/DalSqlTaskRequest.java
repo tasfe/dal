@@ -90,8 +90,9 @@ public class DalSqlTaskRequest<T> implements DalRequest<T>{
 	
 	private Callable<T> create(StatementParameters parameters, DalHints hints) throws SQLException {
 		if(builder instanceof TableSqlBuilder && isTableShardingEnabled(logicDbName, ((TableSqlBuilder)builder).getTableName())){
-			String tableShardStr = buildShardStr(logicDbName, locateTableShardId(logicDbName, hints, parameters, null));
-			return new SqlTaskCallable<>(DalClientFactory.getClient(logicDbName), ((TableSqlBuilder)builder).build(tableShardStr), parameters, hints, task);
+		    TableSqlBuilder tableBuilder = (TableSqlBuilder)builder;
+			String tableShardStr = buildShardStr(logicDbName, locateTableShardId(logicDbName, tableBuilder.getTableName(), hints, parameters, null));
+			return new SqlTaskCallable<>(DalClientFactory.getClient(logicDbName), tableBuilder.build(tableShardStr), parameters, hints, task);
 		}
 
 		return new SqlTaskCallable<>(DalClientFactory.getClient(logicDbName), builder.build(), parameters, hints, task);

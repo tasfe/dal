@@ -147,7 +147,7 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 		private K executeByTableShards() throws SQLException {
 			BulkTaskResultMerger<K> merger = task.createMerger();
 			
-			Map<String, Map<Integer, Map<String, ?>>> pojosInTable = shuffleByTable(logicDbName, hints.getTableShardId(), shaffled);
+			Map<String, Map<Integer, Map<String, ?>>> pojosInTable = shuffleByTable(logicDbName, rawTableName, hints.getTableShardId(), shaffled);
 			
 			if(pojosInTable.size() > 1 && hints.getKeyHolder() != null) {
 				hints.getKeyHolder().requireMerge();
