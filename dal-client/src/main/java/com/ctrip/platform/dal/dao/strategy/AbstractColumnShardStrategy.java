@@ -192,6 +192,12 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
         if(shardColValues != null) {
             for(String column: columns) {
                 Object id = shardColValues.get(column);
+                if(id == null) {
+                    //To check in case insensitive way
+                    for(String col: shardColValues.keySet())
+                        if(col.equalsIgnoreCase(column))
+                            id = shardColValues.get(col);
+                }
                 if(id != null) {
                     return calculateDbShard(id);
                 }
@@ -204,12 +210,38 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
         if(shardColValues != null) {
             for(String column: columns) {
                 Object id = shardColValues.get(column);
+                if(id == null) {
+                    //To check in case insensitive way
+                    for(String col: shardColValues.keySet())
+                        if(col.equalsIgnoreCase(column))
+                            id = shardColValues.get(col);
+                }
                 if(id != null) {
                     return calculateTableShard(id);
                 }
             }
         }
         return null;
+    }
+    
+    private Object findValue(String[] columns, Map<String, ?> colValues) {
+        if(colValues == null)
+            return null;            
+        
+        Object id = null;
+        for(String column: columns) {
+            id = colValues.get(column);
+            if(id == null) {
+                //To check in case insensitive way
+                for(String col: colValues.keySet())
+                    if(col.equalsIgnoreCase(column))
+                        id = colValues.get(col);
+            }
+            if(id != null) {
+                return calculateTableShard(id);
+            }
+        }
+        return null;            
     }
     
     @Override
