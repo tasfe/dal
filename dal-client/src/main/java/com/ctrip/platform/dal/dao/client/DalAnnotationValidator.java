@@ -9,8 +9,10 @@ import org.springframework.stereotype.Component;
 
 import com.ctrip.platform.dal.dao.annotation.Transactional;
 
-@Component
+@Component(DalAnnotationValidator.VALIDATOR_NAME)
 public class DalAnnotationValidator implements BeanPostProcessor {
+    public static final String VALIDATOR_NAME = "com.ctrip.platform.dal.dao.client.DalAnnotationValidator";
+    public static final String VALIDATION_MSG = "Bean annotated by @Transactional must be created through DalTransactionManager.create()";
     private static final String CGLIB_SIGNATURE = "$$EnhancerByCGLIB$$";
     
     @Override
@@ -36,7 +38,7 @@ public class DalAnnotationValidator implements BeanPostProcessor {
         for (Method method : methods) {
             Transactional txAnnotation = method.getAnnotation(Transactional.class);
             if (txAnnotation != null) {
-                throw new BeanInstantiationException(targetClass, "Bean annotated by @Transactional must be created through DalTransactionManager.create()");
+                throw new BeanInstantiationException(targetClass, VALIDATION_MSG);
             }
         }        
         

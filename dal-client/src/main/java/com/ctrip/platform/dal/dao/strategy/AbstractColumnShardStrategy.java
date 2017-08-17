@@ -155,93 +155,60 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
     }
     
     private String evaluateDbShard(String[] columns, StatementParameters parameters) {
-        if(parameters == null)
-            return null;
-
-        for(String column: columns) {
-            StatementParameter param = parameters.get(column, ParameterDirection.Input);
-            if(param != null && param.getValue() != null) {
-                Object id = param.getValue();
-                if(id != null) {
-                    return calculateDbShard(id);
-                }
-            }
-        }
-
-        return null;
+        Object value = findValue(columns, parameters);
+        return value == null ? null : calculateDbShard(value);
     }
     
     private String evaluateTableShard(String[] columns, StatementParameters parameters) {
+        Object value = findValue(columns, parameters);
+        return value == null ? null : calculateTableShard(value);
+    }
+    
+    private Object findValue(String[] columns, StatementParameters parameters) {
         if(parameters == null)
             return null;
 
         for(String column: columns) {
             StatementParameter param = parameters.get(column, ParameterDirection.Input);
-            if(param != null && param.getValue() != null) {
-                Object id = param.getValue();
-                if(id != null) {
-                    return calculateTableShard(id);
-                }
-            }
+            if(param == null || param.getValue() == null)
+                continue;
+            return param.getValue();
         }
 
         return null;
     }
     
     private String evaluateDbShard(String[] columns, Map<String, ?> shardColValues) {
-        if(shardColValues != null) {
-            for(String column: columns) {
-                Object id = shardColValues.get(column);
-                if(id == null) {
-                    //To check in case insensitive way
-                    for(String col: shardColValues.keySet())
-                        if(col.equalsIgnoreCase(column))
-                            id = shardColValues.get(col);
-                }
-                if(id != null) {
-                    return calculateDbShard(id);
-                }
-            }
-        }
-        return null;
+        Object value = findValue(columns, shardColValues);
+        return value == null ? null : calculateDbShard(value);
     }
     
     private String evaluateTableShard(String[] columns, Map<String, ?> shardColValues) {
-        if(shardColValues != null) {
-            for(String column: columns) {
-                Object id = shardColValues.get(column);
-                if(id == null) {
-                    //To check in case insensitive way
-                    for(String col: shardColValues.keySet())
-                        if(col.equalsIgnoreCase(column))
-                            id = shardColValues.get(col);
-                }
-                if(id != null) {
-                    return calculateTableShard(id);
-                }
-            }
-        }
-        return null;
+        Object value = findValue(columns, shardColValues);
+        return value == null ? null : calculateTableShard(value);
     }
     
     private Object findValue(String[] columns, Map<String, ?> colValues) {
         if(colValues == null)
             return null;            
         
-        Object id = null;
+        Object value = null;
+        
         for(String column: columns) {
-            id = colValues.get(column);
-            if(id == null) {
-                //To check in case insensitive way
-                for(String col: colValues.keySet())
-                    if(col.equalsIgnoreCase(column))
-                        id = colValues.get(col);
-            }
-            if(id != null) {
-                return calculateTableShard(id);
-            }
+            value = colValues.get(column);
+            if(value != null)
+                return value;
+
+            //To check in case insensitive way
+            for(Map.Entry<String, ?> colEntry: colValues.entrySet())
+                if(colEntry.getKey().equalsIgnoreCase(column)) {
+                    value = colEntry.getValue();
+                    if(value != null)
+                        return value;
+                }
         }
-        return null;            
+        
+        return value;            
     }
     
     @Override
