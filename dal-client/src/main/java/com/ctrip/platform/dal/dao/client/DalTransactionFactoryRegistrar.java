@@ -11,6 +11,7 @@ import org.springframework.beans.factory.support.BeanDefinitionValidationExcepti
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.type.AnnotationMetadata;
 
+import com.ctrip.platform.dal.dao.annotation.DalTransactional;
 import com.ctrip.platform.dal.dao.annotation.Transactional;
 
 public class DalTransactionFactoryRegistrar implements ImportBeanDefinitionRegistrar {
@@ -40,8 +41,7 @@ public class DalTransactionFactoryRegistrar implements ImportBeanDefinitionRegis
             
             boolean annotated = false;
             for (Method method : beanClass.getMethods()) {
-                Transactional txAnnotation = method.getAnnotation(Transactional.class);
-                if(txAnnotation != null) {
+                if(isTransactionAnnotated(method)) {
                     annotated = true;
                     break;
                 }
@@ -60,6 +60,10 @@ public class DalTransactionFactoryRegistrar implements ImportBeanDefinitionRegis
 
             cav.addGenericArgumentValue(beanClass.getName());
         }
+    }
+    
+    private boolean isTransactionAnnotated(Method method) {
+        return method.getAnnotation(Transactional.class) != null || method.getAnnotation(DalTransactional.class) != null; 
     }
     
     private void registerValidator(BeanDefinitionRegistry registry) {

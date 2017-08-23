@@ -36,12 +36,17 @@ public class DalAnnotationValidator implements BeanPostProcessor {
         Method[] methods = targetClass.getDeclaredMethods();
 
         for (Method method : methods) {
-            Transactional txAnnotation = method.getAnnotation(Transactional.class);
-            if (txAnnotation != null) {
-                throw new BeanInstantiationException(targetClass, VALIDATION_MSG);
-            }
+            validate(targetClass, method, Transactional.class);
+            validate(targetClass, method, DalTransaction.class);
         }        
         
         return bean;
+    }
+    
+    private void validate(Class targetClass, Method method, Class annotationClass) {
+        Class txAnnotation = method.getAnnotation(annotationClass);
+        if (txAnnotation != null) {
+            throw new BeanInstantiationException(targetClass, VALIDATION_MSG);
+        }
     }
 }
