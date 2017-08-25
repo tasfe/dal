@@ -10,6 +10,13 @@ import java.util.Objects;
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalHints;
 
+/**
+ * This sql builder only handles template creation. It will not do with the parameters
+ * for now.
+ * 
+ * @author jhhe
+ *
+ */
 public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
     protected DatabaseCategory dbCategory = DatabaseCategory.MySql;
 
@@ -46,6 +53,10 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
         return condition ? addSimpleClause(template): this;
     }
     
+    public AbstractFreeSqlBuilder appendIf(boolean condition, Clause clause) {
+        return condition ? add(clause) : this;
+    }
+    
     /**
      * Append template depends on whether the condition is met.
      * @param condition
@@ -56,6 +67,11 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
     public AbstractFreeSqlBuilder appendIf(boolean condition, String template, String elseTemplate) {
         return condition ? addSimpleClause(template): addSimpleClause(elseTemplate);
     }
+    
+    public AbstractFreeSqlBuilder appendIf(boolean condition, Clause clause, Clause elseClause) {
+        return condition ? add(clause) : add(elseClause);
+    }
+
     
     /**
      * Append names separate by seperator
@@ -90,6 +106,10 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
         return addSimpleClause(sb.toString());
     }
 
+    public AbstractFreeSqlBuilder append(Clause clause) {
+        return add(clause);
+    }
+
     /**
      * The tableName will be replaced by true table name if it is a logic table that allow shard
      * @param tableName table name. The table can be sharded
@@ -99,38 +119,16 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
         return add(new TableClause(tableName));
     }
     
-    /**
-     * The tableName will be replaced by true table name if it is a logic table that allow shard
-     * @param tableName table name. The table can be sharded
-     * @param tableShardId the provided table shard id
-     * @return
-     */
-    public AbstractFreeSqlBuilder appendTable(String tableName, String tableShardId) {
-        return add(new TableClause(tableName, tableShardId));
-    }
-    
-    /**
-     * The tableName will be replaced by true table name if it is a logic table that allow shard
-     * @param tableName table name. The table can be sharded
-     * @param tableShardId the provided table shard id
-     * @return
-     */
-    public AbstractFreeSqlBuilder appendTable(String tableName, Integer tableShardId) {
-        return add(new TableClause(tableName, String.valueOf(tableShardId)));
-    }
-    
-    /**
-     * The tableName will be replaced by true table name if it is a logic table that allow shard
-     * @param tableName table name. The table can be sharded
-     * @param tableShardValue the provided table shard value that used for evaluate the shard id
-     * @return
-     */
-    public AbstractFreeSqlBuilder appendTable(String tableName, Object tableShardValue) {
-        return add(new TableClause(tableName, tableShardValue));
-    }
-    
-    public AbstractFreeSqlBuilder bracketNext() {
+    public AbstractFreeSqlBuilder appendWithTable(String template, String tableName) {
         return this;
+    }
+    
+    public AbstractFreeSqlBuilder appendWithTable(String template, TableClause tableClause) {
+        return this;
+    }
+    
+    public AbstractFreeSqlBuilder bracket(Clause clause) {
+        return leftBracket().add(clause).rightBracket();
     }
     
     public AbstractFreeSqlBuilder leftBracket() {
@@ -157,11 +155,11 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
      * Below are handy methods that append common clauses
      */
 
-    public AbstractFreeSqlBuilder select(String... names) {
+    public AbstractFreeSqlBuilder selectFrom(String[] names, TableClause table) {
         return this;
     }
     
-    public AbstractFreeSqlBuilder select(List<String> names) {
+    public AbstractFreeSqlBuilder selectFrom(List<String> names, TableClause table) {
         return this;
     }
     
@@ -208,6 +206,7 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
     public AbstractFreeSqlBuilder isNull(String fieldName) {
         return addExpClause("%s IS NULL ?", fieldName);
     }
+    
     public AbstractFreeSqlBuilder isNotNull(String fieldName) {
         return addExpClause("%s IS NOT NULL ?", fieldName);
     }
@@ -216,7 +215,7 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
         String build(DatabaseCategory dbCategory);
     }
     
-    private class SimpleClause implements Clause{
+    private class SimpleClause implements Clause {
         private String template;
         SimpleClause(String template) {
             this.template =template;
@@ -226,7 +225,7 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
-    private class ExpClause implements Clause{
+    private static class ExpClause implements Clause {
         private String template;
         private String fieldName;
         ExpClause(String template, String fieldName) {
@@ -239,7 +238,7 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
-    private static class OperatorClause implements Clause{
+    private static class OperatorClause implements Clause {
         private String operator;
         OperatorClause(String operator) {
             this.operator = operator;
@@ -277,8 +276,11 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
         return add(new ExpClause(template, fieldName));
     }
     
+    public static ExpClause expression(String template) {
+        
+    }
     
-    private class TableClause implements Clause{
+    private static class TableClause implements Clause{
         private String tableName;
         private String tableShardId;
         private Object tableShardValue;
@@ -286,17 +288,6 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
         
         TableClause(String tableName) {
             this.tableName = tableName;
-        }
-        
-        TableClause(String tableName, String tableShardId) {
-            this(tableName);
-            this.tableShardId = tableShardId;
-        }
-        
-        
-        TableClause(String tableName, Object tableShardValue) {
-            this(tableName);
-            this.tableShardValue = tableShardValue;
         }
         
         public void setHints() {
@@ -312,5 +303,22 @@ public abstract class AbstractFreeSqlBuilder implements SqlBuilder {
             // compute the table shard if only value is provided
             return null;
         }
+    }
+    
+    public static TableClause table(String tableName) {
+        return new TableClause(tableName);
+    }
+    
+    public static TableClause table(String tableName, String tableShardId) {
+        TableClause tc = new TableClause(tableName);
+        tc.tableShardId = tableShardId;
+        return tc;
+    }
+    
+    
+    public static TableClause table(String tableName, Object tableShardValue) {
+        TableClause tc = new TableClause(tableName);
+        tc.tableShardValue = tableShardValue;
+        return tc;
     }
 }
