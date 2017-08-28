@@ -105,6 +105,30 @@ public class StatementParameters {
 		return setInParameter(index, name, sqlType, values, true);
 	}
 	
+	/**
+	 * Set multiple parameters to sensitive by parameter index.
+	 * @param indexList
+	 * @return
+	 */
+	public StatementParameters setSensitiveByIndex(List<Integer> indexList) {
+	    for(StatementParameter p: parameters)
+	        if(indexList.contains(p.getIndex()))
+	            p.setSensitive(true);
+	    return this;
+	}
+	
+    /**
+     * Set multiple parameters to sensitive by parameter name.
+     * @param nameList
+     * @return
+     */
+	public StatementParameters setSensitiveByName(List<String> nameList) {
+        for(StatementParameter p: parameters)
+            if(nameList.contains(p.getName()))
+                p.setSensitive(true);
+        return this;
+    }
+    
 	public int size() {
 		return parameters.size();
 	}
