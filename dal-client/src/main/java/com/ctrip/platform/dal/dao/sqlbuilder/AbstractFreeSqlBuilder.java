@@ -466,6 +466,8 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
+    public static final Clause NULL = new NullClause();
+    
     public static class OperatorClause extends Clause {
         private String operator;
         OperatorClause(String operator) {
