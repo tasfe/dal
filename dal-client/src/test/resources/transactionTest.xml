@@ -6,7 +6,7 @@
        http://www.springframework.org/schema/context  
        http://www.springframework.org/schema/context/spring-context-3.0.xsd">  
   
-    <bean class="com.ctrip.platform.dal.dao.client.DalTransactionFactoryRegistrar"/>    
+    <bean class="com.ctrip.platform.dal.dao.client.DalTransactionalEnabler"/>    
     <context:component-scan base-package="test.com.ctrip.platform.dal.dao.annotation.normal" />
 
     <bean id="TransactionAnnoClassSqlServer" class="test.com.ctrip.platform.dal.dao.annotation.normal.TransactionAnnoClassSqlServer"/>

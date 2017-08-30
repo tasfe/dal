@@ -12,5 +12,7 @@ public class EnableTransactionTest {
         ApplicationContext ctx = new AnnotationConfigApplicationContext("test.com.ctrip.platform.dal.dao.annotation.javaConfig", "com.ctrip.platform.dal.dao.client");
         TransactionAnnoClass bean = ctx.getBean(TransactionAnnoClass.class);
         assertNull(bean.perform());
+        assertNotNull(bean.getTest());
+        assertNull(bean.performOld());
     }
 }

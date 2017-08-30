@@ -8,10 +8,10 @@ import java.lang.annotation.Target;
 
 import org.springframework.context.annotation.Import;
 
-import com.ctrip.platform.dal.dao.client.DalTransactionFactoryRegistrar;
+import com.ctrip.platform.dal.dao.client.DalTransactionalEnabler;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
-@Import(DalTransactionFactoryRegistrar.class)
+@Import(DalTransactionalEnabler.class)
 public @interface EnableDalTransaction {}

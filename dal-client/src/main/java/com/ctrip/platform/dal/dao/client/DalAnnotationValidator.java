@@ -7,12 +7,13 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.stereotype.Component;
 
+import com.ctrip.platform.dal.dao.annotation.DalTransactional;
 import com.ctrip.platform.dal.dao.annotation.Transactional;
 
 @Component(DalAnnotationValidator.VALIDATOR_NAME)
 public class DalAnnotationValidator implements BeanPostProcessor {
     public static final String VALIDATOR_NAME = "com.ctrip.platform.dal.dao.client.DalAnnotationValidator";
-    public static final String VALIDATION_MSG = "Bean annotated by @Transactional must be created through DalTransactionManager.create()";
+    public static final String VALIDATION_MSG = "Bean annotated by @DalTransactional or @Transactional(deprecated) must be created through DalTransactionManager.create()";
     private static final String CGLIB_SIGNATURE = "$$EnhancerByCGLIB$$";
     
     @Override
@@ -37,15 +38,14 @@ public class DalAnnotationValidator implements BeanPostProcessor {
 
         for (Method method : methods) {
             validate(targetClass, method, Transactional.class);
-            validate(targetClass, method, DalTransaction.class);
+            validate(targetClass, method, DalTransactional.class);
         }        
         
         return bean;
     }
     
     private void validate(Class targetClass, Method method, Class annotationClass) {
-        Class txAnnotation = method.getAnnotation(annotationClass);
-        if (txAnnotation != null) {
+        if (method.isAnnotationPresent(annotationClass)) {
             throw new BeanInstantiationException(targetClass, VALIDATION_MSG);
         }
     }
