@@ -4,9 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TransactionTestOracleUser implements TransactionTestUser{
+public class TransactionTestMySqlUserNew implements TransactionTestUser{
     @Autowired
-    private TransactionAnnoClassOracle test;
+    private TransactionAnnoClassMySqlNew test;
     
     public String perform() {
         return test.perform();
