@@ -406,7 +406,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     
     public static class TextClause extends Clause {
         private String template;
-        TextClause(String template) {
+        public TextClause(String template) {
             this.template =template;
         }
         public String build() {
@@ -417,11 +417,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static class ColumnClause extends Clause {
         private String columnName;
         private String alias;
-        ColumnClause(String columnName) {
+        public ColumnClause(String columnName) {
             this.columnName = columnName;
         }
         
-        ColumnClause(String columnName, String alias) {
+        public ColumnClause(String columnName, String alias) {
             this(columnName);
             this.alias = alias;
         }
@@ -436,11 +436,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         private String template;
         private String fieldName;
         
-        ExpressionClause(String template) {
+        public ExpressionClause(String template) {
             this.template = template;
         }
         
-        ExpressionClause(String template, String fieldName) {
+        public ExpressionClause(String template, String fieldName) {
             this(template);
             this.fieldName = fieldName;
         }
@@ -470,7 +470,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     
     public static class OperatorClause extends Clause {
         private String operator;
-        OperatorClause(String operator) {
+        public OperatorClause(String operator) {
             this.operator = operator;
         }
         
@@ -543,7 +543,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         private String tableShardId;
         private Object tableShardValue;
         
-        TableClause(String tableName) {
+        public TableClause(String tableName) {
             this.tableName = tableName;
         }
         
