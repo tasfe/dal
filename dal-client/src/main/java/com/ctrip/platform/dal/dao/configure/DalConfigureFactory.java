@@ -15,6 +15,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -168,6 +169,7 @@ public class DalConfigureFactory implements DalConfigConstants {
             databases.put(database.getName(), database);
         }
 
+        checkAttribte(databaseSetNode, NAME, PROVIDER, SHARD_STRATEGY, SHARDING_STRATEGY);
         if (hasAttribute(databaseSetNode, SHARD_STRATEGY))
             return new DatabaseSet(getAttribute(databaseSetNode, NAME), getAttribute(databaseSetNode, PROVIDER),
                     getAttribute(databaseSetNode, SHARD_STRATEGY), databases);
@@ -180,6 +182,7 @@ public class DalConfigureFactory implements DalConfigConstants {
     }
 
     private DataBase readDataBase(Node dataBaseNode) {
+        checkAttribte(dataBaseNode, NAME, DATABASE_TYPE, SHARDING, CONNECTION_STRING);
         return new DataBase(getAttribute(dataBaseNode, NAME), getAttribute(dataBaseNode, DATABASE_TYPE).equals(MASTER),
                 getAttribute(dataBaseNode, SHARDING), getAttribute(dataBaseNode, CONNECTION_STRING));
     }
@@ -211,4 +214,22 @@ public class DalConfigureFactory implements DalConfigConstants {
         return dalconfigUrl;
     }
 
+    private void checkAttribte(Node node, String... validNames) {
+        NamedNodeMap map = node.getAttributes();
+        if(map == null)
+            return;
+        
+        for(int i = 0 ; i <map.getLength(); i++) {
+            String name = map.item(i).getNodeName();
+            boolean found = false;
+            for(String candidate: validNames)
+                if(name.equals(candidate)){
+                    found = true;
+                    break;
+                }
+            
+            if(!found)
+                throw new IllegalStateException("");
+        }
+    }
 }

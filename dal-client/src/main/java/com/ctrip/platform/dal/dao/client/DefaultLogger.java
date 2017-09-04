@@ -158,7 +158,7 @@ public class DefaultLogger extends LoggerAdapter implements DalLogger {
 		String params = "";
 		if(encryptLogging){
 			try {
-				params = new String(Base64.encodeBase64(LoggerHelper.getParams(entry).getBytes()));
+				params = new String(DalBase64.encodeBase64(LoggerHelper.getParams(entry).getBytes()));
 			} catch (Exception e) {
 				logger.error(e.getMessage(), e);
 			}
@@ -241,5 +241,11 @@ public class DefaultLogger extends LoggerAdapter implements DalLogger {
 	@Override
 	public String getAppID() {
 		return "999999";
+	}
+	
+	private class DalBase64 extends Base64 {
+	    protected int  getDefaultBufferSize() {
+            return 256;
+	    }
 	}
 }
