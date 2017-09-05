@@ -1,7 +1,9 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
+import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.*;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractSqlBuilder.wrapField;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -10,6 +12,7 @@ import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalClientFactory;
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.StatementParameters;
+import com.ctrip.platform.dal.exceptions.DalException;
 
 /**
  * This sql builder only handles template creation. It will not do with the parameters
@@ -50,7 +53,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         Objects.requireNonNull(hints, "DalHints can't be null.");
 
         this.hints = hints;
-        clauses.setHints(hints);
+        clauses.setHints(hints.clone());
 
         return this;
     }
@@ -70,13 +73,16 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public String build() {
-        return clauses.build();
+        try {
+            return clauses.build();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public StatementParameters buildParameters() {
-        // TODO Auto-generated method stub
-        return null;
+        return parameters;
     }
     
     public AbstractFreeSqlBuilder append(String template) {
@@ -157,6 +163,17 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return this;
     }
     
+    public AbstractFreeSqlBuilder appendWithColumns(String template, String[] columnNames, String separator) {
+        ClauseList cl = new ClauseList();
+        for (int i = 0; i < columnNames.length; i++) {
+            cl.add(new ColumnClause(columnNames[i]));
+            if(i != columnNames.length -1)
+                cl.add(new TextClause(separator));    
+        }
+        
+        return add(new TextClause(template, cl));
+    }
+    
     /**
      * The tableName will be replaced by true table name if it is a logic table that allow shard
      * @param tableName table name. The table can be sharded
@@ -167,11 +184,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public AbstractFreeSqlBuilder appendWithTable(String template, String tableName) {
-        return this;
+        return add(new TextClause(template, table(tableName)));
     }
     
     public AbstractFreeSqlBuilder appendWithTable(String template, TableClause tableClause) {
-        return this;
+        return add(new TextClause(template, tableClause));
     }
     
     /**
@@ -347,7 +364,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             this.parameters = parameters;
         }
 
-        public abstract String build();
+        public abstract String build() throws SQLException;
     }
     
     public static class ClauseList extends Clause {
@@ -372,7 +389,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
 
         public void setParameters(StatementParameters parameters) {
-            setParameters(parameters);
             for(Clause c: list)
                 c.setParameters(parameters);
         }
@@ -391,7 +407,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
         
         @Override
-        public String build() {
+        public String build() throws SQLException {
             StringBuilder sb = new StringBuilder();
             validate();
             for(Clause c: list)
@@ -406,11 +422,40 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     
     public static class TextClause extends Clause {
         private String template;
+        private Clause embededClause = NULL;
         public TextClause(String template) {
             this.template =template;
         }
-        public String build() {
-            return template;
+        
+        public TextClause(String template, Clause embededClause) {
+            this(template);
+            this.embededClause = embededClause;
+        }
+        
+        public void setDbCategory(DatabaseCategory dbCategory) {
+            super.setDbCategory(dbCategory);
+            embededClause.setDbCategory(dbCategory);
+        }
+
+        public void setLogicDbName(String logicDbName) {
+            super.setLogicDbName(logicDbName);
+            embededClause.setLogicDbName(logicDbName);
+        }
+
+        public void setHints(DalHints hints) {
+            super.setHints(hints);
+            embededClause.setHints(hints);
+        }
+
+        public void setParameters(StatementParameters parameters) {
+            super.setParameters(parameters);
+            embededClause.setParameters(parameters);
+        }
+        
+        public String build() throws SQLException {
+            return embededClause instanceof NullClause ?
+                    template :
+                        String.format(template, embededClause.build());
         }
     }
     
@@ -539,23 +584,27 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     private static class TableClause extends Clause{
-        private String tableName;
+        private String rawTableName;
         private String tableShardId;
         private Object tableShardValue;
         
-        public TableClause(String tableName) {
-            this.tableName = tableName;
+        public TableClause(String rawTableName) {
+            this.rawTableName = rawTableName;
         }
         
         @Override
-        public String build() {
-            if(hints == null)
-                throw new RuntimeException("Just to remind that the hints s not set");
+        public String build() throws SQLException {
+            if(!isTableShardingEnabled(logicDbName, rawTableName))
+                return wrapField(dbCategory, rawTableName);
             
-            // Check if table is sharded
-            // compute the table shard if only value is provided
-            // And need to wrap it against db category
-            return null;
+            if(tableShardId!= null)
+                return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, tableShardId));
+            
+            if(tableShardValue != null) {
+                return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, new DalHints().setTableShardValue(tableShardValue), null, null)));
+            }
+                
+            return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, hints, parameters, null)));
         }
     }
     
