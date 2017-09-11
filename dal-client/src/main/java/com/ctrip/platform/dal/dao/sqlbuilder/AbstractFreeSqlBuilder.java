@@ -30,8 +30,15 @@ import com.ctrip.platform.dal.exceptions.DalException;
  *
  */
 public class AbstractFreeSqlBuilder implements SqlBuilder {
-    protected DatabaseCategory dbCategory = DatabaseCategory.MySql;
-
+    public static final String EMPTY = "";
+    public static final String SPACE = " ";
+    public static final String COMMA = ", ";
+    public static final String SELECT = "SELECT ";
+    public static final String FROM = " FROM ";
+    public static final String WHERE= " WHERE ";
+    
+    protected DatabaseCategory dbCategory;
+    
     private String logicDbName;
     private DalHints hints;
     private StatementParameters parameters;
@@ -137,6 +144,10 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public AbstractFreeSqlBuilder append(boolean condition, Clause clause, Clause elseClause) {
         return condition ? add(clause) : add(elseClause);
     }
+    
+    public AbstractFreeSqlBuilder append(String template, Clause clause) {
+        return add(new TextClause(template, clause));
+    }
 
     /**
      * End of basic append methods definition
@@ -153,22 +164,22 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * @param separator
      * @return
      */
-    public AbstractFreeSqlBuilder appendColumns(String[] columnNames, String separator) {
+    public AbstractFreeSqlBuilder appendColumns(String[] columnNames) {
         for (int i = 0; i < columnNames.length; i++) {
             appendColumn(columnNames[i]);
             if(i != columnNames.length -1)
-                append(separator);    
+                append(COMMA);    
         }
         
         return this;
     }
     
-    public AbstractFreeSqlBuilder appendWithColumns(String template, String[] columnNames, String separator) {
+    public AbstractFreeSqlBuilder appendWithColumns(String template, String[] columnNames) {
         ClauseList cl = new ClauseList();
         for (int i = 0; i < columnNames.length; i++) {
             cl.add(new ColumnClause(columnNames[i]));
             if(i != columnNames.length -1)
-                cl.add(new TextClause(separator));    
+                cl.add(new TextClause(COMMA));    
         }
         
         return add(new TextClause(template, cl));
@@ -183,23 +194,16 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return add(new TableClause(tableName));
     }
     
-    public AbstractFreeSqlBuilder appendWithTable(String template, String tableName) {
-        return add(new TextClause(template, table(tableName)));
-    }
-    
-    public AbstractFreeSqlBuilder appendWithTable(String template, TableClause tableClause) {
-        return add(new TextClause(template, tableClause));
-    }
-    
     /**
      * Below are handy methods that append common clauses
      */
 
-    public AbstractFreeSqlBuilder selectFrom(String[] names, TableClause table) {
-        return this;
-    }
-    
-    public AbstractFreeSqlBuilder selectFrom(List<String> names, TableClause table) {
+    public AbstractFreeSqlBuilder selectFrom(String[] columnNames, TableClause table) {
+        append(SELECT);
+        appendColumns(columnNames);
+        append(FROM);
+        append(table);
+        append(new SqlServerWithNoLock());
         return this;
     }
     
@@ -406,6 +410,10 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return this;
         }
         
+        public boolean isEmpty() {
+            return list.isEmpty();
+        }
+        
         @Override
         public String build() throws SQLException {
             StringBuilder sb = new StringBuilder();
@@ -420,42 +428,21 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
-    public static class TextClause extends Clause {
+    public static class TextClause extends ClauseList {
         private String template;
-        private Clause embededClause = NULL;
         public TextClause(String template) {
             this.template =template;
         }
         
         public TextClause(String template, Clause embededClause) {
             this(template);
-            this.embededClause = embededClause;
-        }
-        
-        public void setDbCategory(DatabaseCategory dbCategory) {
-            super.setDbCategory(dbCategory);
-            embededClause.setDbCategory(dbCategory);
-        }
-
-        public void setLogicDbName(String logicDbName) {
-            super.setLogicDbName(logicDbName);
-            embededClause.setLogicDbName(logicDbName);
-        }
-
-        public void setHints(DalHints hints) {
-            super.setHints(hints);
-            embededClause.setHints(hints);
-        }
-
-        public void setParameters(StatementParameters parameters) {
-            super.setParameters(parameters);
-            embededClause.setParameters(parameters);
+            add(embededClause);
         }
         
         public String build() throws SQLException {
-            return embededClause instanceof NullClause ?
+            return isEmpty() ?
                     template :
-                        String.format(template, embededClause.build());
+                        String.format(template, super.build());
         }
     }
     
@@ -472,7 +459,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
         
         public String build() {
-            return wrapField(dbCategory, columnName);
+            return alias == null ? wrapField(dbCategory, columnName): wrapField(dbCategory, columnName) + " as " + alias;
         }
     }
     
@@ -606,6 +593,17 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
                 
             return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, hints, parameters, null)));
         }
+    }
+    
+    private static class SqlServerWithNoLock extends Clause {
+        private static final String SQL_SERVER_NOLOCK = "WITH (NOLOCK)";
+        public String build() throws SQLException {
+            return dbCategory == DatabaseCategory.SqlServer ? SPACE + SQL_SERVER_NOLOCK : EMPTY;
+        }
+    }
+    
+    public static ColumnClause column(String columnName) {
+        return new ColumnClause(columnName);
     }
     
     public static ColumnClause as(String columnName, String alias) {
