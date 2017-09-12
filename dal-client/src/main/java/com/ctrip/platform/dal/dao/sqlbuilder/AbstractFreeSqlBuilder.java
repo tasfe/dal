@@ -37,10 +37,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static final String FROM = " FROM ";
     public static final String WHERE= " WHERE ";
     public static final String AS = " AS ";
-    
-    protected DatabaseCategory dbCategory;
+    public static final String GROUP_BY = " GROUP BY ";
+    public static final String HAVING = "HAVING ";
     
     private String logicDbName;
+    private DatabaseCategory dbCategory;
     private DalHints hints;
     private StatementParameters parameters;
     private ClauseList clauses = new ClauseList();
@@ -236,15 +237,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public AbstractFreeSqlBuilder groupBy(String condition) {
-        return this;
+        return append(GROUP_BY).append(condition);
     }
     
-    public AbstractFreeSqlBuilder having(String template) {
-        return this;
-    }
-    
-    public AbstractFreeSqlBuilder having(Expression clause) {
-        return this;
+    public AbstractFreeSqlBuilder having(String condition) {
+        return append(HAVING).append(condition);
     }
     
     public AbstractFreeSqlBuilder bracket(Clause clause) {
@@ -259,7 +256,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return add(new Bracket(false));
     }
     
-    public AbstractFreeSqlBuilder bracket(Expression... clauses) {
+    public AbstractFreeSqlBuilder bracket(Clause... clauses) {
         return leftBracket().append(clauses).rightBracket();
     }
     
@@ -276,18 +273,22 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public AbstractFreeSqlBuilder and(Clause... clauses) {
-        return add(Operator.and());
+        for (int i = 0; i < clauses.length; i++) {
+            append(clauses[i]);
+            if(i != clauses.length -1)
+                and();    
+        }
+        
+        return this;
     }
     
     public AbstractFreeSqlBuilder or(Clause... clauses) {
-        return add(Operator.or());
-    }
-    
-    public AbstractFreeSqlBuilder not(Clause... clauses) {
-        return add(Operator.not());
-    }
-    
-    public AbstractFreeSqlBuilder bracket(Clause... clauses) {
+        for (int i = 0; i < clauses.length; i++) {
+            append(clauses[i]);
+            if(i != clauses.length -1)
+                or();    
+        }
+        
         return this;
     }
     
