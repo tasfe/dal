@@ -1,29 +1,29 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
-import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.BracketClause;
+import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Bracket;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Clause;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.ClauseList;
-import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.ExpressionClause;
+import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Expression;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.NULL;
 
 public class Expressions {
     
     
     public Clause leftBracket() {
-        return new BracketClause(true);
+        return new Bracket(true);
     }
 
     public Clause rightBracket() {
-        return new BracketClause(false);
+        return new Bracket(false);
     }
     
-    public Clause bracket(ExpressionClause... clauses) {
+    public Clause bracket(Expression... clauses) {
         ClauseList list = new ClauseList();
         return list.add(leftBracket()).add(clauses).add(rightBracket());
     }
 
     public static Clause expression(String template) {
-        return new ExpressionClause(template);
+        return new Expression(template);
     }
     public static Clause expression(boolean condition, String template) {
         return condition ? expression(template) : NULL;
@@ -33,47 +33,47 @@ public class Expressions {
         return condition ? expression(template) : expression(elseTemplate);
     }
     
-    public ExpressionClause equal(String fieldName) {
-        return new ExpressionClause("%s = ?", fieldName);
+    public Expression equal(String fieldName) {
+        return new Expression("%s = ?", fieldName);
     }
     
-    public ExpressionClause notEqual(String fieldName) {
-        return new ExpressionClause("%s <> ?", fieldName);
+    public Expression notEqual(String fieldName) {
+        return new Expression("%s <> ?", fieldName);
     }
     
-    public ExpressionClause greaterThan(String fieldName) {
-        return new ExpressionClause("%s > ?", fieldName);
+    public Expression greaterThan(String fieldName) {
+        return new Expression("%s > ?", fieldName);
     }
 
-    public ExpressionClause greaterThanEquals(String fieldName) {
-        return new ExpressionClause("%s >= ?", fieldName);
+    public Expression greaterThanEquals(String fieldName) {
+        return new Expression("%s >= ?", fieldName);
     }
 
-    public ExpressionClause lessThan(String fieldName) {
-        return new ExpressionClause("%s < ?", fieldName);
+    public Expression lessThan(String fieldName) {
+        return new Expression("%s < ?", fieldName);
     }
 
-    public ExpressionClause lessThanEquals(String fieldName) {
-        return new ExpressionClause("%s <= ?", fieldName);
+    public Expression lessThanEquals(String fieldName) {
+        return new Expression("%s <= ?", fieldName);
     }
 
-    public ExpressionClause between(String fieldName) {
-        return new ExpressionClause("%s  BETWEEN ? AND ?", fieldName);
+    public Expression between(String fieldName) {
+        return new Expression("%s  BETWEEN ? AND ?", fieldName);
     }
     
-    public ExpressionClause like(String fieldName) {
-        return new ExpressionClause("%s LIKE ?", fieldName);
+    public Expression like(String fieldName) {
+        return new Expression("%s LIKE ?", fieldName);
     }
     
-    public ExpressionClause in(String fieldName) {
-        return new ExpressionClause("%s IN(?)", fieldName);
+    public Expression in(String fieldName) {
+        return new Expression("%s IN(?)", fieldName);
     }
     
-    public ExpressionClause isNull(String fieldName) {
-        return new ExpressionClause("%s IS NULL ?", fieldName);
+    public Expression isNull(String fieldName) {
+        return new Expression("%s IS NULL ?", fieldName);
     }
     
-    public ExpressionClause isNotNull(String fieldName) {
-        return new ExpressionClause("%s IS NOT NULL ?", fieldName);
+    public Expression isNotNull(String fieldName) {
+        return new Expression("%s IS NOT NULL ?", fieldName);
     }
 }

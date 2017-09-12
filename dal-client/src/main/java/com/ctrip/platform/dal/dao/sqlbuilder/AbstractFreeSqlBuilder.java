@@ -36,6 +36,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static final String SELECT = "SELECT ";
     public static final String FROM = " FROM ";
     public static final String WHERE= " WHERE ";
+    public static final String AS = " AS ";
     
     protected DatabaseCategory dbCategory;
     
@@ -92,6 +93,10 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return parameters;
     }
     
+    /**
+     * Basic append methods definition
+     */
+    
     public AbstractFreeSqlBuilder append(String template) {
         return addTextClause(template);
     }
@@ -144,63 +149,72 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public AbstractFreeSqlBuilder append(boolean condition, Clause clause, Clause elseClause) {
         return condition ? add(clause) : add(elseClause);
     }
-    
-    public AbstractFreeSqlBuilder append(String template, Clause clause) {
-        return add(new TextClause(template, clause));
-    }
 
     /**
-     * End of basic append methods definition
+     * Append methods for column and table
      */
     
     public AbstractFreeSqlBuilder appendColumn(String columnName) {
-        add(new ColumnClause(columnName));
+        add(new Column(columnName));
         return this;
     }
     
     /**
-     * Append names separate by seperator
-     * @param names
-     * @param separator
+     * Append columns separate by COMMA
+     * @param columns 
      * @return
      */
-    public AbstractFreeSqlBuilder appendColumns(String[] columnNames) {
-        for (int i = 0; i < columnNames.length; i++) {
-            appendColumn(columnNames[i]);
-            if(i != columnNames.length -1)
+    public AbstractFreeSqlBuilder appendColumns(String... columns) {
+        return appendColumns(columns(columns));
+    }
+
+    /**
+     * Append columns separate by COMMA
+     * @param columns The type of column can be Column or other clause
+     * @return
+     */
+    public AbstractFreeSqlBuilder appendColumns(Clause... columns) {
+        for (int i = 0; i < columns.length; i++) {
+            append(columns[i]);
+            if(i != columns.length -1)
                 append(COMMA);    
         }
         
         return this;
     }
-    
-    public AbstractFreeSqlBuilder appendWithColumns(String template, String[] columnNames) {
-        ClauseList cl = new ClauseList();
-        for (int i = 0; i < columnNames.length; i++) {
-            cl.add(new ColumnClause(columnNames[i]));
-            if(i != columnNames.length -1)
-                cl.add(new TextClause(COMMA));    
-        }
-        
-        return add(new TextClause(template, cl));
-    }
-    
+
     /**
      * The tableName will be replaced by true table name if it is a logic table that allow shard
      * @param tableName table name. The table can be sharded
      * @return
      */
     public AbstractFreeSqlBuilder appendTable(String tableName) {
-        return add(new TableClause(tableName));
+        return add(new Table(tableName));
     }
     
     /**
-     * Below are handy methods that append common clauses
+     * Combined append for SELECT
      */
 
-    public AbstractFreeSqlBuilder selectFrom(String[] columnNames, TableClause table) {
+    /**
+     * Using the columns and table to build a SELECT column1, column2,... FROM table
+     * @param columns The type of column can be Column or other clause
+     * @param table
+     * @return
+     */
+    public AbstractFreeSqlBuilder selectFrom(String[] columns, Table table) {
+        return selectFrom(columns(columns), table);
+    }
+    
+    /**
+     * Using the columns and table to build a SELECT column1, column2,... FROM table
+     * @param columns The type of column can be Column or other clause
+     * @param table
+     * @return
+     */
+    public AbstractFreeSqlBuilder selectFrom(Clause[] columns, Table table) {
         append(SELECT);
-        appendColumns(columnNames);
+        appendColumns(columns);
         append(FROM);
         append(table);
         append(new SqlServerWithNoLock());
@@ -214,14 +228,14 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder where(String template) {
-        return this;
+        return append(WHERE + template);
     }
     
     public AbstractFreeSqlBuilder where(Clause... clauses) {
         return this;
     }
     
-    public AbstractFreeSqlBuilder groupBy(String column) {
+    public AbstractFreeSqlBuilder groupBy(String condition) {
         return this;
     }
     
@@ -229,7 +243,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return this;
     }
     
-    public AbstractFreeSqlBuilder having(ExpressionClause clause) {
+    public AbstractFreeSqlBuilder having(Expression clause) {
         return this;
     }
     
@@ -238,39 +252,39 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public AbstractFreeSqlBuilder leftBracket() {
-        return add(new BracketClause(true));
+        return add(new Bracket(true));
     }
 
     public AbstractFreeSqlBuilder rightBracket() {
-        return add(new BracketClause(false));
+        return add(new Bracket(false));
     }
     
-    public AbstractFreeSqlBuilder bracket(ExpressionClause... clauses) {
+    public AbstractFreeSqlBuilder bracket(Expression... clauses) {
         return leftBracket().append(clauses).rightBracket();
     }
     
     public AbstractFreeSqlBuilder and() {
-        return add(OperatorClause.and());
+        return add(Operator.and());
     }
     
     public AbstractFreeSqlBuilder or() {
-        return add(OperatorClause.or());
+        return add(Operator.or());
     }
     
     public AbstractFreeSqlBuilder not() {
-        return add(OperatorClause.not());
+        return add(Operator.not());
     }
     
     public AbstractFreeSqlBuilder and(Clause... clauses) {
-        return add(OperatorClause.and());
+        return add(Operator.and());
     }
     
     public AbstractFreeSqlBuilder or(Clause... clauses) {
-        return add(OperatorClause.or());
+        return add(Operator.or());
     }
     
     public AbstractFreeSqlBuilder not(Clause... clauses) {
-        return add(OperatorClause.not());
+        return add(Operator.not());
     }
     
     public AbstractFreeSqlBuilder bracket(Clause... clauses) {
@@ -428,51 +442,49 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
-    public static class TextClause extends ClauseList {
+    public static class Text extends Clause {
         private String template;
-        public TextClause(String template) {
+        public Text(String template) {
             this.template =template;
         }
         
-        public TextClause(String template, Clause embededClause) {
-            this(template);
-            add(embededClause);
-        }
-        
         public String build() throws SQLException {
-            return isEmpty() ?
-                    template :
-                        String.format(template, super.build());
+            return template;
         }
     }
     
-    public static class ColumnClause extends Clause {
+    public static class Column extends Clause {
         private String columnName;
         private String alias;
-        public ColumnClause(String columnName) {
+        public Column(String columnName) {
             this.columnName = columnName;
         }
         
-        public ColumnClause(String columnName, String alias) {
+        public Column(String columnName, String alias) {
             this(columnName);
             this.alias = alias;
         }
         
+        public Column as(String alias) {
+            this.alias = alias;
+            return this;
+        }
+        
         public String build() {
-            return alias == null ? wrapField(dbCategory, columnName): wrapField(dbCategory, columnName) + " as " + alias;
+            return alias == null ? wrapField(dbCategory, columnName): wrapField(dbCategory, columnName) + " AS " + alias;
         }
     }
     
-    public static class ExpressionClause extends Clause {
+    public static class Expression extends Clause {
         private boolean valid;
         private String template;
         private String fieldName;
         
-        public ExpressionClause(String template) {
+        public Expression(String template) {
             this.template = template;
         }
         
-        public ExpressionClause(String template, String fieldName) {
+        public Expression(String template, String fieldName) {
             this(template);
             this.fieldName = fieldName;
         }
@@ -487,7 +499,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * @author jhhe
      *
      */
-    public static class NullClause extends ExpressionClause {
+    public static class NullClause extends Expression {
         public NullClause() {
             super("");
         }
@@ -500,9 +512,9 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     
     public static final Clause NULL = new NullClause();
     
-    public static class OperatorClause extends Clause {
+    public static class Operator extends Clause {
         private String operator;
-        public OperatorClause(String operator) {
+        public Operator(String operator) {
             this.operator = operator;
         }
         
@@ -512,22 +524,22 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return null;
         }
         
-        public static OperatorClause and() {
-            return new OperatorClause("AND");
+        public static Operator and() {
+            return new Operator("AND");
         }
         
-        public static OperatorClause or() {
-            return new OperatorClause("OR");
+        public static Operator or() {
+            return new Operator("OR");
         }
         
-        public static OperatorClause not() {
-            return new OperatorClause("NOT");
+        public static Operator not() {
+            return new Operator("NOT");
         }
     }
     
-    public static class BracketClause extends Clause {
+    public static class Bracket extends Clause {
         private boolean left;
-        public BracketClause(boolean isLeft) {
+        public Bracket(boolean isLeft) {
             left = isLeft;
         }
         
@@ -551,32 +563,42 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     private AbstractFreeSqlBuilder addTextClause(String template) {
-        return add(new TextClause(template));
+        return add(new Text(template));
     }
     
     private AbstractFreeSqlBuilder addExpClause(String template, String fieldName) {
-        return add(new ExpressionClause(template, fieldName));
+        return add(new Expression(template, fieldName));
     }
     
-    public static TextClause text(String template) {
-        return new TextClause(template);
+    public static Text text(String template) {
+        return new Text(template);
     }
     
     public static Clause expression(String template) {
-        return new ExpressionClause(template);
+        return new Expression(template);
     }
     
-    public static Clause expression(ExpressionClause... clauses) {
+    public static Clause expression(Expression... clauses) {
         return new ClauseList().add(clauses);
     }
     
-    private static class TableClause extends Clause{
+    private static class Table extends Clause{
         private String rawTableName;
         private String tableShardId;
         private Object tableShardValue;
         
-        public TableClause(String rawTableName) {
+        public Table(String rawTableName) {
             this.rawTableName = rawTableName;
+        }
+        
+        public Table inShard(String tableShardId) {
+            this.tableShardId = tableShardId;
+            return this;
+        }
+        
+        public Table shardValue(String tableShardValue) {
+            this.tableShardValue = tableShardValue;
+            return this;
         }
         
         @Override
@@ -595,6 +617,12 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
+    /**
+     * Special Clause that only works when DB is sql server. It will append WITH (NOLOCK) after table
+     * name against guideline.
+     * @author jhhe
+     *
+     */
     private static class SqlServerWithNoLock extends Clause {
         private static final String SQL_SERVER_NOLOCK = "WITH (NOLOCK)";
         public String build() throws SQLException {
@@ -602,28 +630,23 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
-    public static ColumnClause column(String columnName) {
-        return new ColumnClause(columnName);
+    public static Column column(String columnName) {
+        return new Column(columnName);
     }
     
-    public static ColumnClause as(String columnName, String alias) {
-        return new ColumnClause(columnName, alias);
+    public static Column[] columns(String... columnNames) {
+        Column[] cl = new Column[columnNames.length];
+        for (int i = 0; i < columnNames.length; i++)
+            cl[i] = column(columnNames[i]);
+
+        return cl;
     }
     
-    public static TableClause table(String tableName) {
-        return new TableClause(tableName);
+    public static Table table(String tableName) {
+        return new Table(tableName);
     }
     
-    public static TableClause table(String tableName, String tableShardId) {
-        TableClause tc = new TableClause(tableName);
-        tc.tableShardId = tableShardId;
-        return tc;
-    }
-    
-    
-    public static TableClause table(String tableName, Object tableShardValue) {
-        TableClause tc = new TableClause(tableName);
-        tc.tableShardValue = tableShardValue;
-        return tc;
+    public static <T> T[] toArray(T... ts) {
+        return ts;
     }
 }
