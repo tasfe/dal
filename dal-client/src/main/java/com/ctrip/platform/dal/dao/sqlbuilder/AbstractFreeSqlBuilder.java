@@ -38,7 +38,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static final String WHERE= " WHERE ";
     public static final String AS = " AS ";
     public static final String GROUP_BY = " GROUP BY ";
-    public static final String HAVING = "HAVING ";
+    public static final String HAVING = " HAVING ";
     
     private String logicDbName;
     private DatabaseCategory dbCategory;
@@ -233,7 +233,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public AbstractFreeSqlBuilder where(Clause... clauses) {
-        return this;
+        return append(WHERE).append(clauses);
     }
     
     public AbstractFreeSqlBuilder groupBy(String condition) {
@@ -242,10 +242,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     
     public AbstractFreeSqlBuilder having(String condition) {
         return append(HAVING).append(condition);
-    }
-    
-    public AbstractFreeSqlBuilder bracket(Clause clause) {
-        return leftBracket().add(clause).rightBracket();
     }
     
     public AbstractFreeSqlBuilder leftBracket() {
@@ -292,48 +288,61 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return this;
     }
     
-    public AbstractFreeSqlBuilder equal(String fieldName) {
-        return addExpClause("%s = ?", fieldName);
+    public AbstractFreeSqlBuilder nullable(Object o) {
+        clauses.nullable(o);
+        return this;
     }
     
-    public AbstractFreeSqlBuilder notEqual(String fieldName) {
-        return addExpClause("%s <> ?", fieldName);
+    public AbstractFreeSqlBuilder equal(String expr) {
+        return addExpClause("%s = ?", expr);
     }
     
-    public AbstractFreeSqlBuilder greaterThan(String fieldName) {
-        return addExpClause("%s > ?", fieldName);
+    public AbstractFreeSqlBuilder notEqual(String expr) {
+        return addExpClause("%s <> ?", expr);
+    }
+    
+    public AbstractFreeSqlBuilder greaterThan(String expr) {
+        return addExpClause("%s > ?", expr);
     }
 
-    public AbstractFreeSqlBuilder greaterThanEquals(String fieldName) {
-        return addExpClause("%s >= ?", fieldName);
+    public AbstractFreeSqlBuilder greaterThanEquals(String expr) {
+        return addExpClause("%s >= ?", expr);
     }
 
-    public AbstractFreeSqlBuilder lessThan(String fieldName) {
-        return addExpClause("%s < ?", fieldName);
+    public AbstractFreeSqlBuilder lessThan(String expr) {
+        return addExpClause("%s < ?", expr);
     }
 
-    public AbstractFreeSqlBuilder lessThanEquals(String fieldName) {
-        return addExpClause("%s <= ?", fieldName);
+    public AbstractFreeSqlBuilder lessThanEquals(String expr) {
+        return addExpClause("%s <= ?", expr);
     }
 
-    public AbstractFreeSqlBuilder between(String fieldName) {
-        return addExpClause("%s  BETWEEN ? AND ?", fieldName);
+    public AbstractFreeSqlBuilder between(String expr) {
+        return addExpClause("%s BETWEEN ? AND ?", expr);
     }
     
-    public AbstractFreeSqlBuilder like(String fieldName) {
-        return addExpClause("%s LIKE ?", fieldName);
+    public AbstractFreeSqlBuilder like(String expr) {
+        return addExpClause("%s LIKE ?", expr);
     }
     
-    public AbstractFreeSqlBuilder in(String fieldName) {
-        return addExpClause("%s IN(?)", fieldName);
+    public AbstractFreeSqlBuilder notLike(String expr) {
+        return addExpClause("%s NOT LIKE ?", expr);
     }
     
-    public AbstractFreeSqlBuilder isNull(String fieldName) {
-        return addExpClause("%s IS NULL ?", fieldName);
+    public AbstractFreeSqlBuilder in(String expr) {
+        return addExpClause("%s IN (?)", expr);
     }
     
-    public AbstractFreeSqlBuilder isNotNull(String fieldName) {
-        return addExpClause("%s IS NOT NULL ?", fieldName);
+    public AbstractFreeSqlBuilder notIn(String expr) {
+        return addExpClause("%s NOT IN (?)", expr);
+    }
+    
+    public AbstractFreeSqlBuilder isNull(String expr) {
+        return addExpClause("%s IS NULL ?", expr);
+    }
+    
+    public AbstractFreeSqlBuilder isNotNull(String expr) {
+        return addExpClause("%s IS NOT NULL ?", expr);
     }
     
     /**
@@ -429,6 +438,25 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return list.isEmpty();
         }
         
+        public void nullable(Object o) {
+            if(list.size() == 0)
+                throw new IllegalStateException("There is no exitsing sql segement.");
+            
+            Clause last = list.get(list.size() - 1);
+            
+            if(last instanceof Expression) {
+                ((Expression)last).nullable(o);
+                return;
+            }
+                
+            if(last instanceof ClauseList) {
+                ((ClauseList)last).nullable(o);
+                return;
+            }
+            
+            throw new IllegalStateException("The last sql segement is not an expression.");
+        }
+        
         @Override
         public String build() throws SQLException {
             StringBuilder sb = new StringBuilder();
@@ -477,21 +505,23 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public static class Expression extends Clause {
-        private boolean valid;
         private String template;
-        private String fieldName;
+        private boolean nullValue = false;
         
         public Expression(String template) {
             this.template = template;
         }
         
-        public Expression(String template, String fieldName) {
-            this(template);
-            this.fieldName = fieldName;
+        public void nullable(Object o) {
+            nullValue = (o == null);
+        }
+        
+        public boolean isNull() {
+            return nullValue;
         }
         
         public String build() {
-            return fieldName == null ? template : String.format(template, wrapField(dbCategory, fieldName));
+            return template;
         }
     }
     
@@ -521,20 +551,19 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         
         @Override
         public String build() {
-            // TODO Auto-generated method stub
-            return null;
+            return operator;
         }
         
         public static Operator and() {
-            return new Operator("AND");
+            return new Operator(" AND ");
         }
         
         public static Operator or() {
-            return new Operator("OR");
+            return new Operator(" OR ");
         }
         
         public static Operator not() {
-            return new Operator("NOT");
+            return new Operator(" NOT ");
         }
     }
     
@@ -567,8 +596,8 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return add(new Text(template));
     }
     
-    private AbstractFreeSqlBuilder addExpClause(String template, String fieldName) {
-        return add(new Expression(template, fieldName));
+    private AbstractFreeSqlBuilder addExpClause(String template, String columnName) {
+        return add(new Expression(String.format(template, columnName)));
     }
     
     public static Text text(String template) {
