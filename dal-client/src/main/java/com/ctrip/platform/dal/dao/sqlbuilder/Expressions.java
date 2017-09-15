@@ -1,93 +1,204 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
-import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Bracket;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractSqlBuilder.wrapField;
+
+import java.util.Objects;
+
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Clause;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.ClauseList;
-import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Expression;
-
-import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.NULL;
 
 public class Expressions {
-    
-    
-    public Clause leftBracket() {
-        return new Bracket(true);
-    }
-
-    public Clause rightBracket() {
-        return new Bracket(false);
-    }
-    
-    public Clause bracket(Expression... clauses) {
-        ClauseList list = new ClauseList();
-        return list.add(leftBracket()).add(clauses).add(rightBracket());
-    }
-
-    public static Clause expression(String template) {
+    public static Expression expression(String template) {
         return new Expression(template);
     }
     
-    private static Expression createExpression(String template, String columnName) {
-        return new Expression(String.format(template, columnName));
+    public static Expression createColumnExpression(String template, String columnName) {
+        return new ColumnExpression(template, columnName);
     }
 
-    public static Clause expression(boolean condition, String template) {
-        return condition ? expression(template) : NULL;
+    public static Expression expression(boolean condition, String template) {
+        return condition ? new Expression(template) : NULL;
     }
     
     public static Clause expression(boolean condition, String template, String elseTemplate) {
         return condition ? expression(template) : expression(elseTemplate);
     }
     
-    public Expression equal(String fieldName) {
-        return createExpression("%s = ?", fieldName);
-    }
-    
-    public Expression notEqual(String fieldName) {
-        return createExpression("%s <> ?", fieldName);
-    }
-    
-    public Expression greaterThan(String fieldName) {
-        return createExpression("%s > ?", fieldName);
+    public static Clause leftBracket() {
+        return new Bracket(true);
     }
 
-    public Expression greaterThanEquals(String fieldName) {
-        return createExpression("%s >= ?", fieldName);
+    public static Clause rightBracket() {
+        return new Bracket(false);
+    }
+    
+    public static Clause bracket(Clause... clauses) {
+        ClauseList list = new ClauseList();
+        return list.add(leftBracket()).add(clauses).add(rightBracket());
     }
 
-    public Expression lessThan(String fieldName) {
-        return createExpression("%s < ?", fieldName);
+    public static Operator and() {
+        return Operator.and();
+    }
+    
+    public static Operator or() {
+        return Operator.or();
+    }
+    
+    public static Operator not() {
+        return Operator.not();
+    }
+    
+    public static Expression equal(String columnName) {
+        return createColumnExpression("%s = ?", columnName);
+    }
+    
+    public static Expression notEqual(String columnName) {
+        return createColumnExpression("%s <> ?", columnName);
+    }
+    
+    public static Expression greaterThan(String columnName) {
+        return createColumnExpression("%s > ?", columnName);
     }
 
-    public Expression lessThanEquals(String fieldName) {
-        return createExpression("%s <= ?", fieldName);
+    public static Expression greaterThanEquals(String columnName) {
+        return createColumnExpression("%s >= ?", columnName);
     }
 
-    public Expression between(String fieldName) {
-        return createExpression("%s  BETWEEN ? AND ?", fieldName);
+    public static Expression lessThan(String columnName) {
+        return createColumnExpression("%s < ?", columnName);
+    }
+
+    public static Expression lessThanEquals(String columnName) {
+        return createColumnExpression("%s <= ?", columnName);
+    }
+
+    public static Expression between(String columnName) {
+        return createColumnExpression("%s BETWEEN ? AND ?", columnName);
     }
     
-    public Expression like(String fieldName) {
-        return createExpression("%s LIKE ?", fieldName);
+    public static Expression like(String columnName) {
+        return createColumnExpression("%s LIKE ?", columnName);
     }
     
-    public Expression notLike(String fieldName) {
-        return createExpression("%s NOT LIKE ?", fieldName);
+    public static Expression notLike(String columnName) {
+        return createColumnExpression("%s NOT LIKE ?", columnName);
     }
     
-    public Expression in(String fieldName) {
-        return createExpression("%s IN(?)", fieldName);
+    public static Expression in(String columnName) {
+        return createColumnExpression("%s IN(?)", columnName);
     }
     
-    public Expression notIn(String fieldName) {
-        return createExpression("%s NOT IN (?)", fieldName);
+    public static Expression notIn(String columnName) {
+        return createColumnExpression("%s NOT IN(?)", columnName);
     }
     
-    public Expression isNull(String fieldName) {
-        return createExpression("%s IS NULL ?", fieldName);
+    public static Expression isNull(String columnName) {
+        return createColumnExpression("%s IS NULL ?", columnName);
     }
     
-    public Expression isNotNull(String fieldName) {
-        return createExpression("%s IS NOT NULL ?", fieldName);
+    public static Expression isNotNull(String columnName) {
+        return createColumnExpression("%s IS NOT NULL ?", columnName);
     }
+    
+    public static class Operator extends Clause {
+        private String operator;
+        public Operator(String operator) {
+            this.operator = operator;
+        }
+        
+        @Override
+        public String build() {
+            return operator;
+        }
+        
+        public static Operator and() {
+            return new Operator(" AND ");
+        }
+        
+        public static Operator or() {
+            return new Operator(" OR ");
+        }
+        
+        public static Operator not() {
+            return new Operator(" NOT ");
+        }
+    }
+    
+    public static class Bracket extends Clause {
+        private boolean left;
+        public Bracket(boolean isLeft) {
+            left = isLeft;
+        }
+        
+        public String build() {
+            return left? "(" : ")";
+        }
+        
+        public boolean isBracket() {
+            return true;
+        }
+
+        public boolean isLeft() {
+            return left;
+        }
+    }
+    
+    public static class Expression extends Clause {
+        private String template;
+        private boolean nullValue = false;
+        
+        public Expression(String template) {
+            this.template = template;
+        }
+        
+        public void nullable(Object o) {
+            nullValue = (o == null);
+        }
+        
+        public boolean isNull() {
+            return nullValue;
+        }
+        
+        public String build() {
+            if(nullValue)
+                throw new IllegalStateException("Null expression should not be removed instead of build");
+            
+            return template;
+        }
+    }
+    
+    public static class ColumnExpression extends Expression {
+        private String columnName;
+        
+        public ColumnExpression(String template, String columnName) {
+            super(template);
+            Objects.requireNonNull(columnName, "column name can not be null");
+            this.columnName = columnName;
+        }
+        
+        public String build() {
+            String template = super.build();
+            return columnName == null ? template : String.format(template, wrapField(dbCategory, columnName));
+        }
+    }
+    
+    /**
+     * This clause is just a placeholder that can be removed from the expression clause list.
+     * @author jhhe
+     *
+     */
+    public static class NullClause extends Expression {
+        public NullClause() {
+            super("");
+        }
+        
+        @Override
+        public String build() {
+            return "";
+        }
+    }
+    
+    public static final Expression NULL = new NullClause();
+
 }

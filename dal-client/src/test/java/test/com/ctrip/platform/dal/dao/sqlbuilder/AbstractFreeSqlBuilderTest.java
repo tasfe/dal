@@ -1,7 +1,14 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
-import static org.junit.Assert.*;
-import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.*;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.column;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.columns;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.expression;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.table;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.text;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.toArray;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
@@ -9,6 +16,7 @@ import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.StatementParameters;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Text;
+import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
 
 public class AbstractFreeSqlBuilderTest {
     private static final String template = "template";
@@ -18,7 +26,6 @@ public class AbstractFreeSqlBuilderTest {
     private static final String EMPTY = "";
     private static final String logicDbName = "dao_test_sqlsvr_tableShard";
     private static final String tableName = "dal_client_test";
-    private static final String templateWIthHolder = "AAA %s BBB";
     
     @Test
     public void testSetLogicDbName() {
@@ -330,7 +337,11 @@ public class AbstractFreeSqlBuilderTest {
         
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + expression, test.build());
+        try {
+            assertEquals(template + expression, test.build());
+            fail();
+        } catch (Exception e) {
+        }
     }
     
     @Test
@@ -339,7 +350,7 @@ public class AbstractFreeSqlBuilderTest {
         test.equal(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " = ?", test.build());
+        assertEquals(wrappedTemplate + " = ?", test.build());
     }
     
     @Test
@@ -348,7 +359,7 @@ public class AbstractFreeSqlBuilderTest {
         test.notEqual(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " <> ?", test.build());
+        assertEquals(wrappedTemplate + " <> ?", test.build());
     }
     
     @Test
@@ -357,7 +368,7 @@ public class AbstractFreeSqlBuilderTest {
         test.greaterThan(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " > ?", test.build());
+        assertEquals(wrappedTemplate + " > ?", test.build());
     }
     
     @Test
@@ -366,7 +377,7 @@ public class AbstractFreeSqlBuilderTest {
         test.greaterThanEquals(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " >= ?", test.build());
+        assertEquals(wrappedTemplate + " >= ?", test.build());
     }
     
     @Test
@@ -375,7 +386,7 @@ public class AbstractFreeSqlBuilderTest {
         test.lessThan(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " < ?", test.build());
+        assertEquals(wrappedTemplate + " < ?", test.build());
     }
     
     @Test
@@ -384,7 +395,7 @@ public class AbstractFreeSqlBuilderTest {
         test.lessThanEquals(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " <= ?", test.build());
+        assertEquals(wrappedTemplate + " <= ?", test.build());
     }
     
     @Test
@@ -393,7 +404,7 @@ public class AbstractFreeSqlBuilderTest {
         test.between(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " BETWEEN ? AND ?", test.build());
+        assertEquals(wrappedTemplate + " BETWEEN ? AND ?", test.build());
     }
     
     @Test
@@ -402,7 +413,7 @@ public class AbstractFreeSqlBuilderTest {
         test.like(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " LIKE ?", test.build());
+        assertEquals(wrappedTemplate + " LIKE ?", test.build());
     }
     
     @Test
@@ -411,7 +422,7 @@ public class AbstractFreeSqlBuilderTest {
         test.notLike(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " NOT LIKE ?", test.build());
+        assertEquals(wrappedTemplate + " NOT LIKE ?", test.build());
     }
     
     @Test
@@ -420,7 +431,7 @@ public class AbstractFreeSqlBuilderTest {
         test.in(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " IN (?)", test.build());
+        assertEquals(wrappedTemplate + " IN(?)", test.build());
     }
     
     @Test
@@ -429,7 +440,7 @@ public class AbstractFreeSqlBuilderTest {
         test.notIn(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " NOT IN (?)", test.build());
+        assertEquals(wrappedTemplate + " NOT IN(?)", test.build());
     }
     
     @Test
@@ -438,7 +449,7 @@ public class AbstractFreeSqlBuilderTest {
         test.isNull(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " IS NULL ?", test.build());
+        assertEquals(wrappedTemplate + " IS NULL ?", test.build());
     }
     
     @Test
@@ -447,7 +458,7 @@ public class AbstractFreeSqlBuilderTest {
         test.isNotNull(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(template + " IS NOT NULL ?", test.build());
+        assertEquals(wrappedTemplate + " IS NOT NULL ?", test.build());
     }
     
         
