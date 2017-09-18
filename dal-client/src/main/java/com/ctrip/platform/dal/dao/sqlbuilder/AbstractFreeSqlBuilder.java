@@ -59,6 +59,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return this;
     }
     
+    /**
+     * Specify parameters that come with this builder
+     * @param parameters
+     * @return
+     */
     public AbstractFreeSqlBuilder with(StatementParameters parameters) {
         Objects.requireNonNull(parameters, "parameters can't be null.");
         if(this.parameters == parameters)
@@ -73,6 +78,12 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return this;
     }
     
+    /**
+     * Build the final sql.
+     * 
+     * It will append where and check if the value is start of "and" or "or", of so, the leading 
+     * "and" or "or" will be removed.
+     */
     public String build() {
         try {
             return clauses.build();
@@ -90,27 +101,48 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * Basic append methods definition
      */
     
-    public AbstractFreeSqlBuilder append(String template) {
-        return append(new Text(template));
+    /**
+     * Basic append method. Parameter value can be String, Clause or Object. It will allow the maximal
+     * flexibility for input parameter.
+     * @param template
+     * @return builder itself
+     */
+    public AbstractFreeSqlBuilder append(Object template) {
+        Objects.requireNonNull(template, "Parameter template should be type of String, Clause, or Object, exceptnull.");
+
+        if(template instanceof String) {
+            clauses.add(new Text((String)template));
+        } else if(template instanceof Clause) {
+            clauses.add((Clause)template);
+        } else {
+            clauses.add(new Text(template.toString()));
+        }
+
+        return this;
     }
     
     /**
-     * Usage like:
+     * Append multiple template to the builder. Parameter of String will be append as Text.
+     *  
+     * If used with Expressions static methods, you can build
+     * sql in a very flexible way. Usage like:
+     * 
      * append(
+     *          "orderId > ?"
      *          and(),
      *          leftBracket(),
      *          equals(),
-     *          expression("abc"),
+     *          expression("count(1)"),
      *          rightBracket(),
      *          or(),
      *          ...
      *       )
-     * @param clauses
+     * @param templates
      * @return
      */
-    public AbstractFreeSqlBuilder append(Clause... clauses) {
-        for(Clause c: clauses)
-            this.clauses.add(c);
+    public AbstractFreeSqlBuilder append(Object... templates) {
+        for(Object template: templates)
+            append(template);
         return this;
     }
     
@@ -120,7 +152,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * @param template
      * @return
      */
-    public AbstractFreeSqlBuilder append(boolean condition, String template) {
+    public AbstractFreeSqlBuilder appendWhen(boolean condition, Object template) {
         return condition ? append(template): this;
     }
     
@@ -131,58 +163,61 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * @param elseTemplate value to be appended when condition is true
      * @return
      */
-    public AbstractFreeSqlBuilder append(boolean condition, String template, String elseTemplate) {
+    public AbstractFreeSqlBuilder appendWhen(boolean condition, Object template, Object elseTemplate) {
         return condition ? append(template): append(elseTemplate);
     }
     
-    public AbstractFreeSqlBuilder append(boolean condition, Clause clause) {
-        return condition ? append(clause) : this;
-    }
-    
-    public AbstractFreeSqlBuilder append(boolean condition, Clause clause, Clause elseClause) {
-        return condition ? append(clause) : append(elseClause);
-    }
-
     /**
-     * Append methods for column and table
+     * Append as column. The column name will be quoted by database specific char.
+     * 
+     * @param columnNames 
+     * @return
      */
-    
     public AbstractFreeSqlBuilder appendColumn(String columnName) {
-        append(new Column(columnName));
-        return this;
+        return append(column(columnName));
     }
     
     /**
-     * Append columns separate by COMMA
-     * @param columns 
-     * @return
-     */
-    public AbstractFreeSqlBuilder appendColumns(String... columns) {
-        return appendColumns(columns(columns));
-    }
-
-    /**
-     * Append columns separate by COMMA
-     * @param columns The type of column can be Column or other clause
-     * @return
-     */
-    public AbstractFreeSqlBuilder appendColumns(Clause... columns) {
-        for (int i = 0; i < columns.length; i++) {
-            append(columns[i]);
-            if(i != columns.length -1)
-                append(COMMA);    
-        }
-        
-        return this;
-    }
-
-    /**
-     * The tableName will be replaced by true table name if it is a logic table that allow shard
+     * Append as Table. Same as append(table(tableName)).
+     * 
+     * The tableName will be replaced by true table name if it is a logic table that allow shard.
+     * 
      * @param tableName table name. The table can be sharded
      * @return
      */
     public AbstractFreeSqlBuilder appendTable(String tableName) {
-        return append(new Table(tableName));
+        return append(table(tableName));
+    }
+    
+    /**
+     * Append as Expression. Same as append(expression(expression))
+     * 
+     * @param expression
+     * @return
+     */
+    public AbstractFreeSqlBuilder appendExpression(String expression) {
+        return append(expression(expression));
+    }
+    
+    /**
+     * Append multiple expressions. Same as append(Object..values) except all 
+     * String parameters will be wrapped by Expression instead of Text.
+     * 
+     * Note: The String parameter will be wrapped by Expression clause.
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder appendExpressions(Object...expressions) {
+        for(Object expr: expressions) {
+            if(expr instanceof String) {
+                appendExpression((String)expr);
+            }else {
+                append(expr);
+            }
+        }
+
+        return this;
     }
     
     /**
@@ -190,42 +225,63 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      */
 
     /**
-     * Using the columns and table to build a SELECT column1, column2,... FROM table
+     * Build a SELECT column1, column2,...using the giving columnNames
+     * 
+     * Note: The String parameter will be wrapped by Column clause.
+     * 
      * @param columns The type of column can be Column or other clause
      * @param table
      * @return
      */
-    public AbstractFreeSqlBuilder selectFrom(String[] columns, Table table) {
-        return selectFrom(columns(columns), table);
-    }
-    
-    /**
-     * Using the columns and table to build a SELECT column1, column2,... FROM table
-     * @param columns The type of column can be Column or other clause
-     * @param table
-     * @return
-     */
-    public AbstractFreeSqlBuilder selectFrom(Clause[] columns, Table table) {
+    public AbstractFreeSqlBuilder select(Object... columnNames) {
         append(SELECT);
-        appendColumns(columns);
-        append(FROM);
-        append(table);
-        append(new SqlServerWithNoLock());
+        for (int i = 0; i < columnNames.length; i++) {
+            if(columnNames[i] instanceof String) {
+                appendColumn((String)columnNames[i]);
+            }else{
+                append(columnNames[i]);
+            }
+            if(i != columnNames.length -1)
+                append(COMMA);    
+        }
+
         return this;
     }
     
     /**
-     * It will append where and check if the value is start of "and" or "or", of so, the leading 
-     * "and" or "or" will be removed
-     * @param template
+     * Append FROM and table. And if logic DB is sql server, it will 
+     * append with no lock by default 
+     * 
+     * @param columns The type of column can be Column or other clause
+     * @param table table name string
      * @return
      */
-    public AbstractFreeSqlBuilder where(String template) {
-        return append(WHERE + template);
+    public AbstractFreeSqlBuilder from(String table) {
+        return from(table(table));
     }
     
-    public AbstractFreeSqlBuilder where(Clause... clauses) {
-        return append(WHERE).append(clauses);
+    /**
+     * Append FROM and table. And if logic DB is sql server, it will 
+     * append with no lock by default 
+     * 
+     * @param columns The type of column can be Column or other clause
+     * @param table table name clause
+     * @return
+     */
+    public AbstractFreeSqlBuilder from(Table table) {
+        return append(FROM).append(table).append(new SqlServerWithNoLock());
+    }
+    
+    /**
+     * Append WHERE alone with expressions.
+     * 
+     * Note: The String parameter will be wrapped by Expression.
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder where(Object...expressions) {
+        return append(WHERE).appendExpressions(expressions);
     }
     
     public AbstractFreeSqlBuilder groupBy(String condition) {
@@ -244,8 +300,16 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return append(Expressions.rightBracket());
     }
     
-    public AbstractFreeSqlBuilder bracket(Clause... clauses) {
-        return leftBracket().append(clauses).rightBracket();
+    /**
+     * Append multiple expression into ().
+     * 
+     * Note: The String parameter will be wrapped by Expression.
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder bracket(Object... expressions) {
+        return leftBracket().appendExpressions(expressions).rightBracket();
     }
     
     public AbstractFreeSqlBuilder and() {
@@ -260,28 +324,57 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return append(Expressions.not());
     }
     
-    public AbstractFreeSqlBuilder and(Clause... clauses) {
-        for (int i = 0; i < clauses.length; i++) {
-            append(clauses[i]);
-            if(i != clauses.length -1)
+    /**
+     * Join multiple expression with AND.
+     * 
+     * Note: The String parameter will be wrapped by Expression.
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder and(Object... expressions) {
+        for (int i = 0; i < expressions.length; i++) {
+            appendExpr(expressions[i]);
+            if(i != expressions.length -1)
                 and();    
         }
         
         return this;
     }
-    
-    public AbstractFreeSqlBuilder or(Clause... clauses) {
-        for (int i = 0; i < clauses.length; i++) {
-            append(clauses[i]);
-            if(i != clauses.length -1)
+
+    /**
+     * Join multiple expression with OR.
+     * 
+     * Note: The String parameter will be wrapped by Expression.
+     * 
+     * @param expressions
+     * @return
+     */
+    public AbstractFreeSqlBuilder or(Object... expressions) {
+        for (int i = 0; i < expressions.length; i++) {
+            appendExpr(expressions[i]);
+            if(i != expressions.length -1)
                 or();    
         }
         
         return this;
     }
     
-    public AbstractFreeSqlBuilder nullable(Object o) {
-        clauses.nullable(o);
+    private void appendExpr(Object expr) {
+        if(expr instanceof String) {
+            appendExpression((String)expr);
+        }else {
+            append(expr);
+        }
+    }
+    
+    /**
+     * Set last expression in builder as nuallable and check against given value 
+     * @param value
+     * @return
+     */
+    public AbstractFreeSqlBuilder nullable(Object value) {
+        clauses.nullable(value);
         return this;
     }
     
@@ -614,19 +707,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return new Column(columnName);
     }
     
-    public static Column[] columns(String... columnNames) {
-        Column[] cl = new Column[columnNames.length];
-        for (int i = 0; i < columnNames.length; i++)
-            cl[i] = column(columnNames[i]);
-
-        return cl;
-    }
-    
     public static Table table(String tableName) {
         return new Table(tableName);
     }
     
-    public static <T> T[] toArray(T... ts) {
-        return ts;
+    public static Expression expression(String template) {
+        return new Expression(template);
     }
 }

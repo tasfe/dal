@@ -1,20 +1,21 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.column;
-import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.columns;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.expression;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.expression;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.table;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.text;
-import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.toArray;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.sql.SQLException;
 
 import org.junit.Test;
 
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.StatementParameters;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder;
+import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Clause;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Text;
 import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
 
@@ -96,22 +97,22 @@ public class AbstractFreeSqlBuilderTest {
     @Test
     public void testAppendCondition() {
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
-        test.append(true, template);
+        test.appendWhen(true, template);
         assertEquals(template, test.build());
         
         test = new AbstractFreeSqlBuilder();
-        test.append(false, template);
+        test.appendWhen(false, template);
         assertEquals(EMPTY, test.build());
     }
     
     @Test
     public void testAppendConditionWithElse() {
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
-        test.append(true, template, elseTemplate);
+        test.appendWhen(true, template, elseTemplate);
         assertEquals(template, test.build());
         
         test = new AbstractFreeSqlBuilder();
-        test.append(false, template, elseTemplate);
+        test.appendWhen(false, template, elseTemplate);
         assertEquals(elseTemplate, test.build());
     }
     
@@ -125,22 +126,22 @@ public class AbstractFreeSqlBuilderTest {
     @Test
     public void testAppendClauseCondition() {
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
-        test.append(true, new Text(template));
+        test.appendWhen(true, new Text(template));
         assertEquals(template, test.build());
         
         test = new AbstractFreeSqlBuilder();
-        test.append(false, new Text(template));
+        test.appendWhen(false, new Text(template));
         assertEquals(EMPTY, test.build());
     }
     
     @Test
     public void testAppendClauseConditionWithElse() {
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
-        test.append(true, new Text(template), new Text(elseTemplate));
+        test.appendWhen(true, new Text(template), new Text(elseTemplate));
         assertEquals(template, test.build());
         
         test = new AbstractFreeSqlBuilder();
-        test.append(false, new Text(template), new Text(elseTemplate));
+        test.appendWhen(false, new Text(template), new Text(elseTemplate));
         assertEquals(elseTemplate, test.build());
     }
     
@@ -150,19 +151,6 @@ public class AbstractFreeSqlBuilderTest {
         test.appendColumn(template);
         test.setLogicDbName(logicDbName);
         assertEquals("[" + template + "]", test.build());
-    }
-    
-    @Test
-    public void testAppendColumns() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
-        test.appendColumns(template, template);
-        test.setLogicDbName(logicDbName);
-        assertEquals("[" + template + "], [" + template + "]", test.build());
-        
-        test = new AbstractFreeSqlBuilder();
-        test.appendColumns(text(template), expression(template));
-        test.setLogicDbName(logicDbName);
-        assertEquals("template, template", test.build());
     }
     
     @Test
@@ -182,20 +170,37 @@ public class AbstractFreeSqlBuilderTest {
         assertEquals("[" + tableName + "_1]", test.build());
     }
     @Test
-    public void testSelectFrom() {
+    public void testSelect() {
         String noShardTable = "noShard";
         
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
-        test.selectFrom(columns(template, template, template), table(noShardTable));
+        test.select(template, template, template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals("SELECT [template], [template], [template] FROM [noShard] WITH (NOLOCK)", test.build());
+        assertEquals("SELECT [template], [template], [template]", test.build());
         
         test = new AbstractFreeSqlBuilder();
-        test.selectFrom(toArray(text(template), expression(template), column(template).as(template)), table(noShardTable));
+        test.select(template, text(template), expression(template), column(template).as(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals("SELECT template, template, [template] AS template FROM [noShard] WITH (NOLOCK)", test.build());
+        assertEquals("SELECT [template], template, template, [template] AS template", test.build());
+    }
+    
+    @Test
+    public void testFrom() {
+        String noShardTable = "noShard";
+        
+        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        test.from(noShardTable);
+        test.setLogicDbName(logicDbName);
+        test.setHints(new DalHints());
+        assertEquals(" FROM [noShard] WITH (NOLOCK)", test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.from(table(noShardTable));
+        test.setLogicDbName(logicDbName);
+        test.setHints(new DalHints());
+        assertEquals(" FROM [noShard] WITH (NOLOCK)", test.build());
     }
     
     @Test
@@ -461,5 +466,15 @@ public class AbstractFreeSqlBuilderTest {
         assertEquals(wrappedTemplate + " IS NOT NULL ?", test.build());
     }
     
-        
+    @Test
+    public void testExpression() throws SQLException {
+        Clause test = expression(template);
+        setEnv(test);
+
+        assertEquals(template, test.build());
+    }
+            
+    private void setEnv(Clause test) {
+        test.setLogicDbName(logicDbName);
+    }
 }

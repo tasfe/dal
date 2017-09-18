@@ -1,17 +1,20 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractSqlBuilder.wrapField;
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.expression;
 
 import java.util.Objects;
 
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Clause;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.ClauseList;
 
+/**
+ * A factory of static expression methods.
+ * 
+ * @author jhhe
+ *
+ */
 public class Expressions {
-    public static Expression expression(String template) {
-        return new Expression(template);
-    }
-    
     public static Expression createColumnExpression(String template, String columnName) {
         return new ColumnExpression(template, columnName);
     }
@@ -21,7 +24,7 @@ public class Expressions {
     }
     
     public static Clause expression(boolean condition, String template, String elseTemplate) {
-        return condition ? expression(template) : expression(elseTemplate);
+        return condition ? AbstractFreeSqlBuilder.expression(template) : AbstractFreeSqlBuilder.expression(elseTemplate);
     }
     
     public static Clause leftBracket() {

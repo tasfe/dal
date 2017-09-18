@@ -1,5 +1,6 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
+import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.expression;
 import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.and;
 import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.between;
 import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.bracket;
@@ -36,14 +37,6 @@ public class ExpressionsTest {
     private static final String tableName = "dal_client_test";
     private static final String templateWIthHolder = "AAA %s BBB";
 
-    @Test
-    public void testExpression() throws SQLException {
-        Clause test = expression(template);
-        setEnv(test);
-
-        assertEquals(template, test.build());
-    }
-    
     @Test
     public void testConditionExpression() throws SQLException {
         Clause test = expression(true, template);
@@ -202,7 +195,6 @@ public class ExpressionsTest {
 
         assertEquals(wrappedTemplate + " NOT IN(?)", test.build());
     }
-    
     
     private void setEnv(Clause test) {
         test.setLogicDbName(logicDbName);
