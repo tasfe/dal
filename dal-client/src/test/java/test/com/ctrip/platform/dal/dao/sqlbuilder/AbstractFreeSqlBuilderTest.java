@@ -227,6 +227,12 @@ public class AbstractFreeSqlBuilderTest {
         test.groupBy(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
+        assertEquals(" GROUP BY " + wrappedTemplate, test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.groupBy(expression(template));
+        test.setLogicDbName(logicDbName);
+        test.setHints(new DalHints());
         assertEquals(" GROUP BY " + template, test.build());
     }
     
@@ -469,12 +475,11 @@ public class AbstractFreeSqlBuilderTest {
     @Test
     public void testExpression() throws SQLException {
         Clause test = expression(template);
-        setEnv(test);
+        
+        AbstractFreeSqlBuilder builder = new AbstractFreeSqlBuilder();
+        builder.append(test);
+        builder.setLogicDbName(logicDbName);
 
         assertEquals(template, test.build());
-    }
-            
-    private void setEnv(Clause test) {
-        test.setLogicDbName(logicDbName);
     }
 }

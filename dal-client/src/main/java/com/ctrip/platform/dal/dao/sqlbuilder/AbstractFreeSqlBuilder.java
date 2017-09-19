@@ -42,20 +42,22 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static final String GROUP_BY = " GROUP BY ";
     public static final String HAVING = " HAVING ";
     
-    private StatementParameters parameters;
+    private BuilderContext context = new BuilderContext();
     private ClauseList clauses = new ClauseList();
     
+    public AbstractFreeSqlBuilder() {
+        context = new BuilderContext();
+        clauses = new ClauseList();
+        clauses.setContext(context);
+    }
+    
     public AbstractFreeSqlBuilder setLogicDbName(String logicDbName) {
-        DalClientFactory.getDalConfigure().getDatabaseSet(logicDbName);
-        clauses.setLogicDbName(logicDbName);
+        context.setLogicDbName(logicDbName);
         return this;
     }
     
     public AbstractFreeSqlBuilder setHints(DalHints hints) {
-        Objects.requireNonNull(hints, "DalHints can't be null.");
-
-        clauses.setHints(hints.clone());
-
+        context.setHints(hints.clone());
         return this;
     }
     
@@ -65,16 +67,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * @return
      */
     public AbstractFreeSqlBuilder with(StatementParameters parameters) {
-        Objects.requireNonNull(parameters, "parameters can't be null.");
-        if(this.parameters == parameters)
-            return this;
-
-        if(this.parameters != null && this.parameters.size() > 0)
-            throw new IllegalStateException("The parameters has already be set and processed. " + 
-                    "You can only set parameters at the begining of build");
-            
-        this.parameters = parameters;
-        clauses.setParameters(parameters);
+        context.setParameters(parameters);
         return this;
     }
     
@@ -94,7 +87,34 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
 
     @Override
     public StatementParameters buildParameters() {
-        return parameters;
+        return context.getParameters();
+    }
+    
+    /**
+     * Create Column clause with given name
+     * @param columnName
+     * @return
+     */
+    public static Column column(String columnName) {
+        return new Column(columnName);
+    }
+    
+    /**
+     * Create Table clause with given name
+     * @param tableName
+     * @return
+     */
+    public static Table table(String tableName) {
+        return new Table(tableName);
+    }
+    
+    /**
+     * Create Expression clause with the given template
+     * @param template
+     * @return
+     */
+    public static Expression expression(String template) {
+        return new Expression(template);
     }
     
     /**
@@ -249,8 +269,8 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     /**
-     * Append FROM and table. And if logic DB is sql server, it will 
-     * append with no lock by default 
+     * Append FROM and table for query. And if logic DB is sql server, it will 
+     * append "WITH (NOLOCK)" by default 
      * 
      * @param columns The type of column can be Column or other clause
      * @param table table name string
@@ -261,8 +281,8 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     /**
-     * Append FROM and table. And if logic DB is sql server, it will 
-     * append with no lock by default 
+     * Append FROM and table for query. And if logic DB is sql server, it will 
+     * append "WITH (NOLOCK)" by default 
      * 
      * @param columns The type of column can be Column or other clause
      * @param table table name clause
@@ -284,7 +304,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return append(WHERE).appendExpressions(expressions);
     }
     
-    public AbstractFreeSqlBuilder groupBy(String condition) {
+    public AbstractFreeSqlBuilder groupBy(String columnName) {
+        return append(GROUP_BY).append(column(columnName));
+    }
+    
+    public AbstractFreeSqlBuilder groupBy(Clause condition) {
         return append(GROUP_BY).append(condition);
     }
     
@@ -369,15 +393,26 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     /**
-     * Set last expression in builder as nuallable and check against given value 
+     * Set last expression in builder as nuallable and check against given value.
      * @param value
      * @return
      */
     public AbstractFreeSqlBuilder nullable(Object value) {
-        clauses.nullable(value);
-        return this;
+        List<Clause> list = clauses.list;
+        
+        if(list.isEmpty())
+            throw new IllegalStateException("There is no exitsing sql segement.");
+        
+        Clause last = list.get(list.size() - 1);
+        
+        if(last instanceof Expression) {
+            ((Expression)last).nullable(value);
+            return this;
+        }
+        
+        throw new IllegalStateException("The last sql segement is not an expression.");
     }
-    
+
     /**
      * Append = expression using the giving name
      * @param columnName  column name, can not be expression.
@@ -505,39 +540,29 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      *
      */
     public static abstract class Clause {
-
         /**
-         * The context for building sql. Please note that each of them may be set at different timing.
-         * The only assumption is all of tem will be set before build is invoked.
-         * For clause that may add parameter, it can do it when parameter is set.
-         * For clause that need hints, it should be done in build, because hints will only be ready
-         * before build is called.
+         * The build context will share the same context of the builder by default
          */
+        protected BuilderContext context;
         
-        protected DatabaseCategory dbCategory;
-        protected String logicDbName;
-        protected DalHints hints;
-        protected StatementParameters parameters;
+        public void setContext(BuilderContext context) {
+            this.context = context;
+        }
         
-        public void setLogicDbName(String logicDbName) {
-            Objects.requireNonNull(logicDbName, "Logic Db Name can't be null.");
-            this.logicDbName = logicDbName;
-            this.dbCategory = DalClientFactory.getDalConfigure().getDatabaseSet(logicDbName).getDatabaseCategory();
+        public DatabaseCategory getDbCategory() {
+            return context.getDbCategory();
         }
 
-        public void setHints(DalHints hints) {
-            this.hints = hints;
+        public String getLogicDbName() {
+            return context.getLogicDbName();
         }
 
-        public void setParameters(StatementParameters parameters) {
-            if(this.parameters == parameters)
-                return;
+        public DalHints getHints() {
+            return context.getHints();
+        }
 
-            if(this.parameters != null && this.parameters.size() > 0)
-                throw new IllegalStateException("The parameters has already be set and processed. " + 
-                        "You can only set parameters once before build");
-            
-            this.parameters = parameters;
+        public StatementParameters getParameters() {
+            return context.getParameters();
         }
 
         public abstract String build() throws SQLException;
@@ -546,32 +571,15 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static class ClauseList extends Clause {
         private List<Clause> list = new ArrayList<>();
         
-        public void setLogicDbName(String logicDbName) {
-            Objects.requireNonNull(logicDbName, "Logic Db Name can't be null.");
-            this.logicDbName = logicDbName;
+        public void setContext(BuilderContext context) {
+            super.setContext(context);
             for(Clause c: list)
-                c.setLogicDbName(logicDbName);
-        }
-
-        public void setHints(DalHints hints) {
-            this.hints = hints;
-            for(Clause c: list)
-                c.setHints(hints);
-        }
-
-        public void setParameters(StatementParameters parameters) {
-            for(Clause c: list)
-                c.setParameters(parameters);
+                c.setContext(context);
         }
         
         public ClauseList add(Clause... clauses) {
             for(Clause c: clauses) {
-                if(logicDbName!=null)
-                    c.setLogicDbName(logicDbName);
-
-                c.setHints(hints);
-                c.setParameters(parameters);
-                
+                c.setContext(context);
                 list.add(c);
             }
             return this;
@@ -579,25 +587,6 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         
         public boolean isEmpty() {
             return list.isEmpty();
-        }
-        
-        public void nullable(Object o) {
-            if(list.size() == 0)
-                throw new IllegalStateException("There is no exitsing sql segement.");
-            
-            Clause last = list.get(list.size() - 1);
-            
-            if(last instanceof Expression) {
-                ((Expression)last).nullable(o);
-                return;
-            }
-                
-            if(last instanceof ClauseList) {
-                ((ClauseList)last).nullable(o);
-                return;
-            }
-            
-            throw new IllegalStateException("The last sql segement is not an expression.");
         }
         
         @Override
@@ -643,7 +632,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
         
         public String build() {
-            return alias == null ? wrapField(dbCategory, columnName): wrapField(dbCategory, columnName) + " AS " + alias;
+            return alias == null ? wrapField(getDbCategory(), columnName): wrapField(getDbCategory(), columnName) + " AS " + alias;
         }
     }
     
@@ -676,6 +665,9 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         
         @Override
         public String build() throws SQLException {
+            String logicDbName = getLogicDbName();
+            DatabaseCategory dbCategory = getDbCategory();
+
             if(!isTableShardingEnabled(logicDbName, rawTableName))
                 return wrapField(dbCategory, rawTableName);
             
@@ -686,7 +678,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
                 return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, new DalHints().setTableShardValue(tableShardValue), null, null)));
             }
                 
-            return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, hints, parameters, null)));
+            return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, getHints(), getParameters(), null)));
         }
     }
     
@@ -699,19 +691,59 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     private static class SqlServerWithNoLock extends Clause {
         private static final String SQL_SERVER_NOLOCK = "WITH (NOLOCK)";
         public String build() throws SQLException {
-            return dbCategory == DatabaseCategory.SqlServer ? SPACE + SQL_SERVER_NOLOCK : EMPTY;
+            return getDbCategory() == DatabaseCategory.SqlServer ? SPACE + SQL_SERVER_NOLOCK : EMPTY;
         }
     }
     
-    public static Column column(String columnName) {
-        return new Column(columnName);
+    /**
+     * Commonly used information for build the sql
+     * 
+     * @author jhhe
+     */
+    private class BuilderContext {
+        private String logicDbName;
+        private DatabaseCategory dbCategory;
+        private DalHints hints;
+        private StatementParameters parameters;
+        
+        public DatabaseCategory getDbCategory() {
+            return dbCategory;
+        }
+
+        public String getLogicDbName() {
+            return logicDbName;
+        }
+
+        public DalHints getHints() {
+            return hints;
+        }
+
+        public StatementParameters getParameters() {
+            return parameters;
+        }
+
+        public void setLogicDbName(String logicDbName) {
+            // Check if exist
+            this.dbCategory = DalClientFactory.getDalConfigure().getDatabaseSet(logicDbName).getDatabaseCategory(); 
+            this.logicDbName = logicDbName;
+        }
+        
+        public void setHints(DalHints hints) {
+            Objects.requireNonNull(hints, "DalHints can't be null.");
+            this.hints = hints.clone();
+        }
+        
+        public void setParameters(StatementParameters parameters) {
+            Objects.requireNonNull(parameters, "parameters can't be null.");
+            if(this.parameters == parameters)
+                return;
+
+            if(this.parameters != null && this.parameters.size() > 0)
+                throw new IllegalStateException("The parameters has already be set and processed. " + 
+                        "You can only set parameters at the begining of build");
+                
+            this.parameters = parameters;
+        }
     }
     
-    public static Table table(String tableName) {
-        return new Table(tableName);
-    }
-    
-    public static Expression expression(String template) {
-        return new Expression(template);
-    }
 }

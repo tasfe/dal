@@ -25,6 +25,7 @@ import java.sql.SQLException;
 
 import org.junit.Test;
 
+import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder;
 import com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.Clause;
 
 public class ExpressionsTest {
@@ -197,6 +198,8 @@ public class ExpressionsTest {
     }
     
     private void setEnv(Clause test) {
-        test.setLogicDbName(logicDbName);
+        AbstractFreeSqlBuilder builder = new AbstractFreeSqlBuilder();
+        builder.append(test);
+        builder.setLogicDbName(logicDbName);
     }
 }

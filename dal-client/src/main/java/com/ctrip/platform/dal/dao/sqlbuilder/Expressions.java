@@ -182,7 +182,7 @@ public class Expressions {
         
         public String build() {
             String template = super.build();
-            return columnName == null ? template : String.format(template, wrapField(dbCategory, columnName));
+            return columnName == null ? template : String.format(template, wrapField(getDbCategory(), columnName));
         }
     }
     
