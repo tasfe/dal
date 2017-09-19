@@ -41,15 +41,15 @@ public class Expressions {
     }
 
     public static Operator and() {
-        return Operator.and();
+        return Operator.AND;
     }
     
     public static Operator or() {
-        return Operator.or();
+        return Operator.OR;
     }
     
     public static Operator not() {
-        return Operator.not();
+        return Operator.NOT;
     }
     
     public static Expression equal(String columnName) {
@@ -115,18 +115,22 @@ public class Expressions {
             return operator;
         }
         
-        public static Operator and() {
-            return new Operator(" AND ");
+        public boolean isOperator() {
+            return true;
         }
         
-        public static Operator or() {
-            return new Operator(" OR ");
+        public boolean isClause() {
+            return this == NOT;
         }
         
-        public static Operator not() {
-            return new Operator(" NOT ");
-        }
+        public static Operator AND = new Operator(" AND ");
+        
+        public static Operator OR = new Operator(" OR ");
+        
+        public static Operator NOT = new Operator(" NOT ");
     }
+    
+    private Operator AND = new Operator(" NOT ");
     
     public static class Bracket extends Clause {
         private boolean left;

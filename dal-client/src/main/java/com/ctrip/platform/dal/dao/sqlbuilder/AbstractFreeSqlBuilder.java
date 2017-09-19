@@ -6,7 +6,7 @@ import static com.ctrip.platform.dal.dao.helper.DalShardingHelper.locateTableSha
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractSqlBuilder.wrapField;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -14,7 +14,9 @@ import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalClientFactory;
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.StatementParameters;
+import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Bracket;
 import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Expression;
+import com.ctrip.platform.dal.dao.sqlbuilder.Expressions.Operator;
 
 /**
  * This sql builder only handles template creation. It will not do with the parameters
@@ -79,7 +81,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      */
     public String build() {
         try {
-            return clauses.build();
+            List<Clause> clauseList = clauses.list;
+
+            meltdownFrom(clauseList);
+            
+            return finalBuild(clauseList);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -90,6 +96,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return context.getParameters();
     }
     
+    private boolean enableAutoMeltdown = true;
+    
+    public void disableAutoMeltdown() {
+        enableAutoMeltdown = false;
+    }
     /**
      * Create Column clause with given name
      * @param columnName
@@ -124,6 +135,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     /**
      * Basic append method. Parameter value can be String, Clause or Object. It will allow the maximal
      * flexibility for input parameter.
+     * 
      * @param template
      * @return builder itself
      */
@@ -132,6 +144,9 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
 
         if(template instanceof String) {
             clauses.add(new Text((String)template));
+        } else if(template instanceof ClauseList) {
+            for(Clause c: ((ClauseList)template).list)
+                clauses.add(c);
         } else if(template instanceof Clause) {
             clauses.add((Clause)template);
         } else {
@@ -539,7 +554,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      * @author jhhe
      *
      */
-    public static abstract class Clause {
+    public static abstract class Clause implements ClauseClassifier {
         /**
          * The build context will share the same context of the builder by default
          */
@@ -565,11 +580,29 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return context.getParameters();
         }
 
-        public abstract String build() throws SQLException;
+        public boolean isClause() {
+            return true;
+        }
+
+        public boolean isNull() {
+            return false;
+        }
+
+        public boolean isBracket() {
+            return false;
+        }
+
+        public boolean isLeft() {
+            return false;
+        }
+
+        public boolean isOperator() {
+            return false;
+        }
     }
     
     public static class ClauseList extends Clause {
-        private List<Clause> list = new ArrayList<>();
+        private List<Clause> list = new LinkedList<>();
         
         public void setContext(BuilderContext context) {
             super.setContext(context);
@@ -746,4 +779,99 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
     }
     
+    private String finalBuild(List<Clause> clauseList) throws SQLException {
+        StringBuilder sb = new StringBuilder();
+        for(Clause clause: clauseList) {
+            sb.append(clause.build());
+        }
+        
+        return sb.toString().trim();
+    }
+    
+    private boolean isQualifiedClause(Clause clause) {
+        return clause instanceof Expression || clause instanceof Bracket || clause instanceof Operator;
+    }
+    
+    // TODO unify all meltdown logic
+    private void meltdownFrom(List<Clause> clauseList) {
+        LinkedList<Clause> filtered = new LinkedList<>();
+        
+        for(Clause entry: clauseList) {
+            if(entry.isClause() && entry.isNull()){
+                meltDownNullValue(filtered);
+                continue;
+            }
+
+            if(entry.isBracket() && !entry.isLeft()){
+                if(meltDownRightBracket(filtered))
+                    continue;
+            }
+            
+            // AND/OR
+            if(entry.isOperator() && !entry.isClause()) {
+                if(meltDownAndOrOperator(filtered))
+                    continue;
+            }
+            
+            filtered.add(entry);
+        }
+    }
+    
+    private interface ClauseClassifier {
+        boolean isClause();
+        boolean isNull();
+        boolean isBracket();
+        boolean isLeft();
+        boolean isOperator();
+        String build() throws SQLException;
+    }
+    
+    private boolean meltDownAndOrOperator(LinkedList<Clause> filtered) {
+        // If it is the first element
+        if(filtered.isEmpty())
+            return true;
+
+        ClauseClassifier entry = filtered.getLast();
+        // The last one is "("
+        if(entry.isBracket() && entry.isLeft())
+            return true;
+            
+        // AND/OR/NOT AND/OR
+        if(entry.isOperator()) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    private boolean meltDownRightBracket(LinkedList<Clause> filtered) {
+        int bracketCount = 1;
+        while(!filtered.isEmpty()) {
+            ClauseClassifier entry = filtered.getLast();
+            // One ")" only remove one "("
+            if(entry.isBracket() && entry.isLeft() && bracketCount == 1){
+                filtered.removeLast();
+                bracketCount--;
+            } else if(entry.isOperator()) {// Remove any leading AND/OR/NOT (BOT is both operator and clause)
+                filtered.removeLast();
+            } else
+                break;
+        }
+        
+        return bracketCount == 0? true : false;
+    }
+    
+    private void meltDownNullValue(LinkedList<Clause> filtered) {
+        if(filtered.isEmpty())
+            return;
+
+        while(!filtered.isEmpty()) {
+            ClauseClassifier entry = filtered.getLast();
+            // Remove any leading AND/OR/NOT (NOT is both operator and clause)
+            if(entry.isOperator()) {
+                filtered.removeLast();
+            }else
+                break;
+        }
+    }
 }
