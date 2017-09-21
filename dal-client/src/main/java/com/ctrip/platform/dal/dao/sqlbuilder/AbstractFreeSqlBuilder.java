@@ -37,6 +37,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static final String EMPTY = "";
     public static final String SPACE = " ";
     public static final String COMMA = ", ";
+    public static final String PLACE_HOLDER = "?";
     public static final String SELECT = "SELECT ";
     public static final String FROM = " FROM ";
     public static final String WHERE= " WHERE ";
@@ -59,7 +60,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public AbstractFreeSqlBuilder setHints(DalHints hints) {
-        context.setHints(hints.clone());
+        context.setHints(hints);
         return this;
     }
     
@@ -83,7 +84,8 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         try {
             List<Clause> clauseList = clauses.list;
 
-            meltdownFrom(clauseList);
+            if(enableAutoMeltdown)
+                meltdownFrom(clauseList);
             
             return finalBuild(clauseList);
         } catch (SQLException e) {
@@ -101,6 +103,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public void disableAutoMeltdown() {
         enableAutoMeltdown = false;
     }
+    
+    public static Text text(Object template) {
+        return new Text(template.toString());
+    }
+    
     /**
      * Create Column clause with given name
      * @param columnName
@@ -284,7 +291,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     /**
-     * Append FROM and table for query. And if logic DB is sql server, it will 
+     * Append FROM and table for SELECT statement. And if logic DB is sql server, it will 
      * append "WITH (NOLOCK)" by default 
      * 
      * @param columns The type of column can be Column or other clause
@@ -332,11 +339,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public AbstractFreeSqlBuilder leftBracket() {
-        return append(Expressions.leftBracket());
+        return append(Expressions.leftBracket);
     }
 
     public AbstractFreeSqlBuilder rightBracket() {
-        return append(Expressions.rightBracket());
+        return append(Expressions.rightBracket);
     }
     
     /**
@@ -352,15 +359,15 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     public AbstractFreeSqlBuilder and() {
-        return append(Expressions.and());
+        return append(Expressions.AND);
     }
     
     public AbstractFreeSqlBuilder or() {
-        return append(Expressions.or());
+        return append(Expressions.OR);
     }
     
     public AbstractFreeSqlBuilder not() {
-        return append(Expressions.not());
+        return append(Expressions.NOT);
     }
     
     /**
@@ -642,6 +649,10 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             this.template =template;
         }
         
+        public boolean isClause() {
+            return false;
+        }
+
         public String build() throws SQLException {
             return template;
         }
@@ -664,6 +675,10 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return this;
         }
         
+        public boolean isClause() {
+            return false;
+        }
+        
         public String build() {
             return alias == null ? wrapField(getDbCategory(), columnName): wrapField(getDbCategory(), columnName) + " AS " + alias;
         }
@@ -673,11 +688,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return append(Expressions.createColumnExpression(template, columnName));
     }
     
-    public static Text text(String template) {
-        return new Text(template);
-    }
-    
-    private static class Table extends Clause{
+    public static class Table extends Clause{
         private String rawTableName;
         private String tableShardId;
         private Object tableShardValue;
@@ -694,6 +705,10 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         public Table shardValue(String tableShardValue) {
             this.tableShardValue = tableShardValue;
             return this;
+        }
+        
+        public boolean isClause() {
+            return false;
         }
         
         @Override
@@ -723,6 +738,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      */
     private static class SqlServerWithNoLock extends Clause {
         private static final String SQL_SERVER_NOLOCK = "WITH (NOLOCK)";
+
+        public boolean isClause() {
+            return false;
+        }
+        
         public String build() throws SQLException {
             return getDbCategory() == DatabaseCategory.SqlServer ? SPACE + SQL_SERVER_NOLOCK : EMPTY;
         }
@@ -852,7 +872,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             if(entry.isBracket() && entry.isLeft() && bracketCount == 1){
                 filtered.removeLast();
                 bracketCount--;
-            } else if(entry.isOperator()) {// Remove any leading AND/OR/NOT (BOT is both operator and clause)
+            } else if(entry.isOperator()) {// Remove any leading AND/OR/NOT (NOT is both operator and clause)
                 filtered.removeLast();
             } else
                 break;

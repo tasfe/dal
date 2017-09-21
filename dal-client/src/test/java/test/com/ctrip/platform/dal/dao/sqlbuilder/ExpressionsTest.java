@@ -1,24 +1,7 @@
 package test.com.ctrip.platform.dal.dao.sqlbuilder;
 
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.expression;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.and;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.between;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.bracket;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.equal;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.expression;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.greaterThan;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.greaterThanEquals;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.in;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.leftBracket;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.lessThan;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.lessThanEquals;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.like;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.not;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.notEqual;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.notIn;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.notLike;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.or;
-import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.rightBracket;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.*;
 import static org.junit.Assert.assertEquals;
 
 import java.sql.SQLException;
@@ -63,7 +46,7 @@ public class ExpressionsTest {
     
     @Test
     public void testLeftBracket() throws SQLException {
-        Clause test = leftBracket();
+        Clause test = leftBracket;
         setEnv(test);
 
         assertEquals("(", test.build());
@@ -71,7 +54,7 @@ public class ExpressionsTest {
     
     @Test
     public void testRightBracket() throws SQLException {
-        Clause test = rightBracket();
+        Clause test = rightBracket;
         setEnv(test);
 
         assertEquals(")", test.build());
@@ -87,7 +70,7 @@ public class ExpressionsTest {
     
     @Test
     public void testAnd() throws SQLException {
-        Clause test = and();
+        Clause test = AND;
         setEnv(test);
 
         assertEquals(" AND ", test.build());
@@ -95,7 +78,7 @@ public class ExpressionsTest {
     
     @Test
     public void testOr() throws SQLException {
-        Clause test = or();
+        Clause test = OR;
         setEnv(test);
 
         assertEquals(" OR ", test.build());
@@ -103,7 +86,7 @@ public class ExpressionsTest {
     
     @Test
     public void testNot() throws SQLException {
-        Clause test = not();
+        Clause test = NOT;
         setEnv(test);
 
         assertEquals(" NOT ", test.build());

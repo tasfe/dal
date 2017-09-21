@@ -194,13 +194,13 @@ public class AbstractFreeSqlBuilderTest {
         test.from(noShardTable);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" FROM [noShard] WITH (NOLOCK)", test.build());
+        assertEquals("FROM [noShard] WITH (NOLOCK)", test.build());
         
         test = new AbstractFreeSqlBuilder();
         test.from(table(noShardTable));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" FROM [noShard] WITH (NOLOCK)", test.build());
+        assertEquals("FROM [noShard] WITH (NOLOCK)", test.build());
     }
     
     @Test
@@ -209,7 +209,7 @@ public class AbstractFreeSqlBuilderTest {
         test.where(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" WHERE template", test.build());
+        assertEquals("WHERE template", test.build());
     }
     
     @Test
@@ -218,7 +218,7 @@ public class AbstractFreeSqlBuilderTest {
         test.where(expression("count() "), text(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" WHERE count() template", test.build());
+        assertEquals("WHERE count() template", test.build());
     }
     
     @Test
@@ -227,13 +227,13 @@ public class AbstractFreeSqlBuilderTest {
         test.groupBy(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" GROUP BY " + wrappedTemplate, test.build());
+        assertEquals("GROUP BY " + wrappedTemplate, test.build());
         
         test = new AbstractFreeSqlBuilder();
         test.groupBy(expression(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" GROUP BY " + template, test.build());
+        assertEquals("GROUP BY " + template, test.build());
     }
     
     @Test
@@ -242,7 +242,7 @@ public class AbstractFreeSqlBuilderTest {
         test.having(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" HAVING " + template, test.build());
+        assertEquals("HAVING " + template, test.build());
     }
     
     @Test
@@ -299,10 +299,10 @@ public class AbstractFreeSqlBuilderTest {
     @Test
     public void testAndMultiple() {
         AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
-        test.and();
+        test.and(template, template, template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" AND ", test.build());
+        assertEquals("template AND template AND template", test.build());
     }
     
     @Test
@@ -311,7 +311,7 @@ public class AbstractFreeSqlBuilderTest {
         test.or();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" OR ", test.build());
+        assertEquals("OR", test.build());
     }
     
     @Test
@@ -329,7 +329,7 @@ public class AbstractFreeSqlBuilderTest {
         test.not();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
-        assertEquals(" NOT ", test.build());
+        assertEquals("NOT", test.build());
     }
     
     @Test
@@ -481,5 +481,11 @@ public class AbstractFreeSqlBuilderTest {
         builder.setLogicDbName(logicDbName);
 
         assertEquals(template, test.build());
+    }
+    
+    @Test
+    public void testDisableAutoMeltdown() throws SQLException {
+        fail();
+//        disableAutoMeltdown
     }
 }

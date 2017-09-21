@@ -156,7 +156,8 @@ public enum ErrorCode {
     /**
      * The result mapping is faild.
      */
-    ResultMappingError(ErrorClassify.Extract, 5700, "Can not extract from result set. If the columns in result set does not match with columns in pojo, please check with DalHintEnum.partialQuery."),
+    ResultMappingError(ErrorClassify.Extract, 5700, "Can not extract from result set. If the columns in result set does not match with columns in pojo, please check with DalHintEnum.allowPartial or partialQuery. "
+            + "For more info please refer to https://github.com/ctripcorp/dal/wiki/Java%E5%AE%A2%E6%88%B7%E7%AB%AF-Hints%E8%AF%B4%E6%98%8E#allowpartial"),
     
 	/**
 	 * Can not get connection from DB %s
@@ -200,4 +201,8 @@ public enum ErrorCode {
 	public ErrorClassify getErrorClassify(){
 		return this.classify;
 	}
+	
+	public static void main(String[] args) {
+        System.out.println("https://github.com/ctripcorp/dal/wiki/Java%E5%AE%A2%E6%88%B7%E7%AB%AF-Hints%E8%AF%B4%E6%98%8E#allowpartial");
+    }
 }

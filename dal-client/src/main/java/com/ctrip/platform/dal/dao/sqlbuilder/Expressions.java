@@ -27,30 +27,20 @@ public class Expressions {
         return condition ? AbstractFreeSqlBuilder.expression(template) : AbstractFreeSqlBuilder.expression(elseTemplate);
     }
     
-    public static Clause leftBracket() {
-        return new Bracket(true);
-    }
+    public static Clause leftBracket = new Bracket(true);
 
-    public static Clause rightBracket() {
-        return new Bracket(false);
-    }
+    public static Clause rightBracket = new Bracket(false);
     
     public static Clause bracket(Clause... clauses) {
         ClauseList list = new ClauseList();
-        return list.add(leftBracket()).add(clauses).add(rightBracket());
+        return list.add(leftBracket).add(clauses).add(rightBracket);
     }
 
-    public static Operator and() {
-        return Operator.AND;
-    }
+    public static Operator AND = new Operator(" AND ");
     
-    public static Operator or() {
-        return Operator.OR;
-    }
+    public static Operator OR = new Operator(" OR ");
     
-    public static Operator not() {
-        return Operator.NOT;
-    }
+    public static Operator NOT = new Operator(" NOT ");
     
     public static Expression equal(String columnName) {
         return createColumnExpression("%s = ?", columnName);
@@ -121,16 +111,8 @@ public class Expressions {
         
         public boolean isClause() {
             return this == NOT;
-        }
-        
-        public static Operator AND = new Operator(" AND ");
-        
-        public static Operator OR = new Operator(" OR ");
-        
-        public static Operator NOT = new Operator(" NOT ");
+        }        
     }
-    
-    private Operator AND = new Operator(" NOT ");
     
     public static class Bracket extends Clause {
         private boolean left;
