@@ -43,6 +43,10 @@ public class FreeSelectSqlBuilder<K> extends AbstractFreeSqlBuilder implements S
 		setDbCategory(dbCategory);
 	}
 	
+    public FreeSelectSqlBuilder(String logicDbName) {
+        setLogicDbName(logicDbName);
+    }
+    
 	/**
 	 * If there is IN parameter, no matter how many values in the IN clause, the IN clause only need to 
 	 * contain one "?".

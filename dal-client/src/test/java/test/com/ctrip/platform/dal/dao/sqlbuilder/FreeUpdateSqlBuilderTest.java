@@ -7,6 +7,7 @@ import java.sql.SQLException;
 
 import org.junit.Test;
 
+import com.ctrip.platform.dal.common.enums.DatabaseCategory;
 import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.sqlbuilder.FreeUpdateSqlBuilder;
 
@@ -25,7 +26,7 @@ public class FreeUpdateSqlBuilderTest {
     private static final String wrappedNoShardTableName = "[noShard]";
 
     private FreeUpdateSqlBuilder createTest() {
-        return (FreeUpdateSqlBuilder)new FreeUpdateSqlBuilder(null).setLogicDbName(logicDbName).setHints(new DalHints());
+        return (FreeUpdateSqlBuilder)new FreeUpdateSqlBuilder(DatabaseCategory.MySql).setLogicDbName(logicDbName).setHints(new DalHints());
     }
     
     @Test

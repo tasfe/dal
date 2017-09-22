@@ -809,6 +809,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
         
         public void setDbCategory(DatabaseCategory dbCategory) {
+            Objects.requireNonNull(dbCategory, "dbCategory can not be NULL");
             if(logicDbName == null)
                 this.dbCategory = dbCategory;
             else{
