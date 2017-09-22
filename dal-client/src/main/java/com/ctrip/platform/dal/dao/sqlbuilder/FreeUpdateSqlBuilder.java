@@ -16,6 +16,7 @@ public class FreeUpdateSqlBuilder extends AbstractFreeSqlBuilder {
     public static final String SET = " SET ";
     
 	public FreeUpdateSqlBuilder(DatabaseCategory dbCategory) {
+	    setDbCategory(dbCategory);
 	}
 
 	/**

@@ -9,7 +9,6 @@ import com.ctrip.platform.dal.dao.DalHints;
 import com.ctrip.platform.dal.dao.DalResultSetExtractor;
 import com.ctrip.platform.dal.dao.DalRowMapper;
 import com.ctrip.platform.dal.dao.ResultMerger;
-import com.ctrip.platform.dal.dao.StatementParameters;
 import com.ctrip.platform.dal.dao.helper.DalFirstResultMerger;
 import com.ctrip.platform.dal.dao.helper.DalListMerger;
 import com.ctrip.platform.dal.dao.helper.DalObjectRowMapper;
@@ -18,14 +17,20 @@ import com.ctrip.platform.dal.dao.helper.DalRowMapperExtractor;
 import com.ctrip.platform.dal.dao.helper.DalSingleResultExtractor;
 import com.ctrip.platform.dal.dao.helper.DalSingleResultMerger;
 
-public class FreeSelectSqlBuilder<K> implements SqlBuilder, SelectBuilder {
-	private String selectSqlTemplate;
-	private DatabaseCategory dbCategory;
-	private StatementParameters parameters;
+/**
+ * A flexible sql builder for SELECT statement.
+ * 
+ * @author jhhe
+ */
+public class FreeSelectSqlBuilder<K> extends AbstractFreeSqlBuilder implements SelectBuilder {
+	@SuppressWarnings("rawtypes")
+    private DalRowMapper mapper;
 	
-	private DalRowMapper mapper;
-	private ResultMerger merger;
-	private DalResultSetExtractor extractor;
+	@SuppressWarnings("rawtypes")
+    private ResultMerger merger;
+	
+	@SuppressWarnings("rawtypes")
+    private DalResultSetExtractor extractor;
 
 	private boolean requireFirst = false;
 	private boolean requireSingle = false;
@@ -35,7 +40,7 @@ public class FreeSelectSqlBuilder<K> implements SqlBuilder, SelectBuilder {
 	private int start;
 
 	public FreeSelectSqlBuilder(DatabaseCategory dbCategory) {
-		this.dbCategory = dbCategory;
+		setDbCategory(dbCategory);
 	}
 	
 	/**
@@ -45,25 +50,14 @@ public class FreeSelectSqlBuilder<K> implements SqlBuilder, SelectBuilder {
 	 * @param updateSqlTemplate
 	 */
 	public FreeSelectSqlBuilder<K> setTemplate(String selectSqlTemplate) {
-		this.selectSqlTemplate= selectSqlTemplate;
+		append(selectSqlTemplate);
 		return this;
-	}
-	
-	public FreeSelectSqlBuilder<K> with(StatementParameters parameters) {
-		this.parameters = parameters;
-		return this;
-	}
-	
-	@Override
-	public StatementParameters buildParameters() {
-		return parameters;
 	}
 	
 	public String build(){
-		if(count  == 0)
-			return selectSqlTemplate;
-		
-		return dbCategory.buildPage(selectSqlTemplate, start, count);
+	    String query = super.build();
+
+	    return count > 0 ? getDbCategory().buildPage(query, start, count) : query;
 	}
 
 	public <T> FreeSelectSqlBuilder<K> mapWith(DalRowMapper<T> mapper) {
@@ -71,11 +65,13 @@ public class FreeSelectSqlBuilder<K> implements SqlBuilder, SelectBuilder {
 		return this;
 	}
 	
-	public <T> FreeSelectSqlBuilder<K> mapWith(Class<T> type) {
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    public <T> FreeSelectSqlBuilder<K> mapWith(Class<T> type) {
 		return mapWith(new DalObjectRowMapper(type));
 	}
 
-	public FreeSelectSqlBuilder<K> simpleType() {
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    public FreeSelectSqlBuilder<K> simpleType() {
 		return mapWith(new DalObjectRowMapper());
 	}
 
@@ -111,17 +107,44 @@ public class FreeSelectSqlBuilder<K> implements SqlBuilder, SelectBuilder {
 		return nullable;
 	}
 	
+	/**
+	 * Indicate the final query will transfered to top count query based on the original query.
+	 * 
+	 * Note: This is applied to the entire sql statement.
+	 *  
+	 * @param count How many recorders to be fetched
+	 * @return builder itself
+	 */
 	public FreeSelectSqlBuilder<K> top(int count) {
 		this.count = count;
 		return this;
 	}	
 
+	/**
+	 * Indicate the final query will transfered to pagination query based on the original query.
+	 * 
+     * Note: This is applied to the entire sql statement.
+     * 
+     * @param start from where the recorder will be fetched
+     * @param count How many recorders to be fetched
+     * @return builder itself
+	 */
 	public FreeSelectSqlBuilder<K> range(int start, int count) {
 		this.start = start;
 		this.count = count;
 		return this;
 	}
 
+	/**
+	 * Indicate the final query will transfered to pagination query based on the original query.
+	 * 
+	 * Note: This is applied to the entire sql statement.
+	 * 
+	 * @param pageNo from which page will be recorder be fetched
+	 * @param pageSize how many recorders to be fetched in a page
+	 * @return builder itself
+	 * @throws SQLException
+	 */
 	public FreeSelectSqlBuilder<K> atPage(int pageNo, int pageSize) throws SQLException {
 		if(pageNo < 1 || pageSize < 1) 
 			throw new SQLException("Illigal pagesize or pageNo, please check");	
@@ -143,7 +166,8 @@ public class FreeSelectSqlBuilder<K> implements SqlBuilder, SelectBuilder {
 		return this;
 	}
 
-	public <T> ResultMerger<T> getResultMerger(DalHints hints){
+	@SuppressWarnings({"unchecked", "rawtypes"})
+    public <T> ResultMerger<T> getResultMerger(DalHints hints){
 		if(hints.is(DalHintEnum.resultMerger))
 			return (ResultMerger<T>)hints.get(DalHintEnum.resultMerger);
 		
@@ -156,7 +180,8 @@ public class FreeSelectSqlBuilder<K> implements SqlBuilder, SelectBuilder {
 		return count > 0 ? new DalRangedResultMerger((Comparator)hints.getSorter(), count): new DalListMerger((Comparator)hints.getSorter());
 	}
 
-	public <T> DalResultSetExtractor<T> getResultExtractor(DalHints hints) throws SQLException { 
+	@SuppressWarnings({"rawtypes", "unchecked"})
+    public <T> DalResultSetExtractor<T> getResultExtractor(DalHints hints) throws SQLException { 
 		if(extractor != null)
 			return extractor;
 

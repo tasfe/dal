@@ -45,6 +45,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static final String GROUP_BY = " GROUP BY ";
     public static final String HAVING = " HAVING ";
     
+    private boolean enableAutoMeltdown = true;
     private BuilderContext context = new BuilderContext();
     private ClauseList clauses = new ClauseList();
     
@@ -54,8 +55,32 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         clauses.setContext(context);
     }
     
+    /**
+     * In case there is Table clause appended, logic DB must be set to determine
+     * if the table name can be sharded or not. Set this logic db name will also
+     * set db category identified by the logic db name. So you don't need to set
+     * db category again.
+     * 
+     * @param logicDbName
+     * @return
+     */
     public AbstractFreeSqlBuilder setLogicDbName(String logicDbName) {
         context.setLogicDbName(logicDbName);
+        return this;
+    }
+    
+    public DatabaseCategory getDbCategory() {
+        return context.getDbCategory();
+    }
+    
+    /**
+     * If you already set logic db name, then you don't need to set this.
+     *  
+     * @param dbCategory
+     * @return
+     */
+    public AbstractFreeSqlBuilder setDbCategory(DatabaseCategory dbCategory) {
+        context.setDbCategory(dbCategory);
         return this;
     }
     
@@ -85,7 +110,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             List<Clause> clauseList = clauses.list;
 
             if(enableAutoMeltdown)
-                meltdownFrom(clauseList);
+                clauseList = meltdownFrom(clauseList);
             
             return finalBuild(clauseList);
         } catch (SQLException e) {
@@ -98,8 +123,9 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return context.getParameters();
     }
     
-    private boolean enableAutoMeltdown = true;
-    
+    /**
+     * Diable the auto removal of AND, OR, NOT, (, ) and nullable expression
+     */
     public void disableAutoMeltdown() {
         enableAutoMeltdown = false;
     }
@@ -776,11 +802,21 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         }
 
         public void setLogicDbName(String logicDbName) {
+            Objects.requireNonNull(logicDbName, "logicDbName can not be NULL");
             // Check if exist
             this.dbCategory = DalClientFactory.getDalConfigure().getDatabaseSet(logicDbName).getDatabaseCategory(); 
             this.logicDbName = logicDbName;
         }
         
+        public void setDbCategory(DatabaseCategory dbCategory) {
+            if(logicDbName == null)
+                this.dbCategory = dbCategory;
+            else{
+                if(this.dbCategory != dbCategory)
+                    throw new IllegalArgumentException("The dbCategory does not match logic DB " + logicDbName);
+            }
+        }
+
         public void setHints(DalHints hints) {
             Objects.requireNonNull(hints, "DalHints can't be null.");
             this.hints = hints.clone();
@@ -813,7 +849,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     // TODO unify all meltdown logic
-    private void meltdownFrom(List<Clause> clauseList) {
+    private LinkedList<Clause> meltdownFrom(List<Clause> clauseList) {
         LinkedList<Clause> filtered = new LinkedList<>();
         
         for(Clause entry: clauseList) {
@@ -835,6 +871,8 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             
             filtered.add(entry);
         }
+        
+        return filtered;
     }
     
     private interface ClauseClassifier {

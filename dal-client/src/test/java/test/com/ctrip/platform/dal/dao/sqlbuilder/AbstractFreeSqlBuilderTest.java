@@ -4,6 +4,7 @@ import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.colum
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.expression;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.table;
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.text;
+import static com.ctrip.platform.dal.dao.sqlbuilder.Expressions.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -30,7 +31,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testSetLogicDbName() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         try {
             test.setLogicDbName(null);
             fail();
@@ -48,9 +49,20 @@ public class AbstractFreeSqlBuilderTest {
         test.setLogicDbName(logicDbName);
     }
     
+    /**
+     * Create test with auto meltdown disabled
+     * @return
+     */
+    private AbstractFreeSqlBuilder createDisabled() {
+        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        test.disableAutoMeltdown();
+        return test;
+    }
+    
+    
     @Test
     public void testSetHints() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         try {
             test.setHints(null);
             fail();
@@ -62,7 +74,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testWith() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         try {
             test.with(null);
             fail();
@@ -89,65 +101,65 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testAppend() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.append(template);
         assertEquals(template, test.build());
     }
 
     @Test
     public void testAppendCondition() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.appendWhen(true, template);
         assertEquals(template, test.build());
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.appendWhen(false, template);
         assertEquals(EMPTY, test.build());
     }
     
     @Test
     public void testAppendConditionWithElse() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.appendWhen(true, template, elseTemplate);
         assertEquals(template, test.build());
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.appendWhen(false, template, elseTemplate);
         assertEquals(elseTemplate, test.build());
     }
     
     @Test
     public void testAppendClause() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.append(new Text(template));
         assertEquals(template, test.build());
     }
 
     @Test
     public void testAppendClauseCondition() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.appendWhen(true, new Text(template));
         assertEquals(template, test.build());
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.appendWhen(false, new Text(template));
         assertEquals(EMPTY, test.build());
     }
     
     @Test
     public void testAppendClauseConditionWithElse() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.appendWhen(true, new Text(template), new Text(elseTemplate));
         assertEquals(template, test.build());
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.appendWhen(false, new Text(template), new Text(elseTemplate));
         assertEquals(elseTemplate, test.build());
     }
     
     @Test
     public void testAppendColumn() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.appendColumn(template);
         test.setLogicDbName(logicDbName);
         assertEquals("[" + template + "]", test.build());
@@ -157,13 +169,13 @@ public class AbstractFreeSqlBuilderTest {
     public void testAppendTable() {
         String noShardTable = "noShard";
         
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.appendTable(noShardTable);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("[" + noShardTable + "]", test.build());
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.appendTable(tableName);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints().inTableShard(1));
@@ -173,13 +185,13 @@ public class AbstractFreeSqlBuilderTest {
     public void testSelect() {
         String noShardTable = "noShard";
         
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.select(template, template, template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("SELECT [template], [template], [template]", test.build());
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.select(template, text(template), expression(template), column(template).as(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -190,13 +202,13 @@ public class AbstractFreeSqlBuilderTest {
     public void testFrom() {
         String noShardTable = "noShard";
         
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.from(noShardTable);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("FROM [noShard] WITH (NOLOCK)", test.build());
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.from(table(noShardTable));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -205,7 +217,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testWhere() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.where(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -214,7 +226,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testWhereClause() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.where(expression("count() "), text(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -223,13 +235,13 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testGroupBy() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.groupBy(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("GROUP BY " + wrappedTemplate, test.build());
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.groupBy(expression(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -238,7 +250,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testHaving() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.having(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -247,7 +259,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testLeftBracket() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.leftBracket();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -256,7 +268,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testRightBracket() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.rightBracket();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -266,21 +278,21 @@ public class AbstractFreeSqlBuilderTest {
     @Test
     public void testBracket() {
         //Empty
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.bracket();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("()", test.build());
         
         //One
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.bracket(text(template));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
         assertEquals("(template)", test.build());
         
         //two
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         test.bracket(text(template), expression(expression));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -289,7 +301,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testAnd() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.and(text(template), text(expression));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -298,7 +310,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testAndMultiple() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.and(template, template, template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -307,7 +319,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testOr() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.or();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -316,7 +328,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testOrMultiple() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.or(text(template), text(expression));
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -325,7 +337,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testNot() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.not();
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -334,14 +346,14 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testNullable() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         try {
             test.nullable(null);
             fail();
         } catch (Exception e) {
         }
         
-        test = new AbstractFreeSqlBuilder();
+        test = createDisabled();
         Expression exp = new Expression(expression);
         test.append(template).append(exp).nullable(null);
         assertTrue(exp.isNull());
@@ -357,7 +369,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testEqual() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.equal(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -366,7 +378,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testNotEqual() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.notEqual(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -375,7 +387,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testGreaterThan() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.greaterThan(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -384,7 +396,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testGreaterThanEquals() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.greaterThanEquals(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -393,7 +405,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testLessThan() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.lessThan(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -402,7 +414,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testLessThanEquals() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.lessThanEquals(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -411,7 +423,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testBetween() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.between(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -420,7 +432,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testLike() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.like(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -429,7 +441,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testNotLike() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.notLike(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -438,7 +450,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testIn() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.in(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -447,7 +459,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testNotIn() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.notIn(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -456,7 +468,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testIsNull() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.isNull(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -465,7 +477,7 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testIsNotNull() {
-        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder test = createDisabled();
         test.isNotNull(template);
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints());
@@ -476,7 +488,7 @@ public class AbstractFreeSqlBuilderTest {
     public void testExpression() throws SQLException {
         Clause test = expression(template);
         
-        AbstractFreeSqlBuilder builder = new AbstractFreeSqlBuilder();
+        AbstractFreeSqlBuilder builder = createDisabled();
         builder.append(test);
         builder.setLogicDbName(logicDbName);
 
@@ -485,7 +497,45 @@ public class AbstractFreeSqlBuilderTest {
     
     @Test
     public void testDisableAutoMeltdown() throws SQLException {
-        fail();
-//        disableAutoMeltdown
+        AbstractFreeSqlBuilder test = createDisabled();
+        test.appendExpressions(AND).bracket(AND, OR, AND);
+        test.disableAutoMeltdown();
+        assertEquals("AND ( AND  OR  AND )", test.build());
+    }
+    
+    @Test
+    public void testAutoMeltdown() throws SQLException {
+        AbstractFreeSqlBuilder test = new AbstractFreeSqlBuilder();
+        test.appendExpressions(AND).bracket(AND, OR, AND);
+        assertEquals("", test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.appendExpressions(template, AND).bracket(AND, OR, AND);
+        assertEquals(template, test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.appendExpressions(template, AND).bracket(AND, OR, AND).appendColumn(template);
+        assertEquals(template + wrappedTemplate, test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.appendExpressions(template, AND).bracket(AND, OR, AND).appendTable(template);
+        assertEquals(template + wrappedTemplate, test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.appendExpressions(template).nullable(null).append(AND).bracket(AND, OR, AND).appendTable(template);
+        assertEquals(wrappedTemplate, test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.appendExpressions(template, AND).bracket(AND, OR, AND).appendTable(template).append(AND).append(expression(template)).nullable(null);
+        assertEquals(template+wrappedTemplate, test.build());
+        
+        test = new AbstractFreeSqlBuilder();
+        test.setLogicDbName(logicDbName);
+        test.appendExpressions(template, AND).bracket(AND, OR, AND, template).appendTable(template).append(AND).append(expression(template)).nullable(null);
+        assertEquals("template AND (template)[template]", test.build());
     }
 }

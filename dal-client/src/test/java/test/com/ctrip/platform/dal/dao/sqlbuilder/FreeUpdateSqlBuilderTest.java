@@ -85,6 +85,15 @@ public class FreeUpdateSqlBuilderTest {
     }
     
     @Test
+    public void testDeleteFromMeltdown() throws SQLException {
+        FreeUpdateSqlBuilder test = createTest();
+
+        test.deleteFrom(noShardTableName);
+        test.where().and(template ,template, template);
+        assertEquals("DELETE FROM " + wrappedNoShardTableName + " WHERE template AND template AND template", test.build());
+    }
+    
+    @Test
     public void testUpdate() throws SQLException {
         FreeUpdateSqlBuilder test = createTest();
 
