@@ -90,6 +90,11 @@
         <add name="dal_shard_0" databaseType="Master" sharding="0" connectionString="dal_shard_0"/>   
         <add name="dal_shard_1" databaseType="Master" sharding="1" connectionString="dal_shard_1"/>   
     </databaseSet>
+    <databaseSet name="MySqlSimpleShardForDB" provider="mySqlProvider"
+         shardingStrategy="class=com.ctrip.platform.dal.dao.strategy.ShardColModShardStrategy;columns=CountryID;mod=2">
+        <add name="dal_shard_0" databaseType="Master" sharding="0" connectionString="dal_shard_0"/>   
+        <add name="dal_shard_1" databaseType="Master" sharding="1" connectionString="dal_shard_1"/>   
+    </databaseSet>
     <databaseSet name="dao_test_oracle" provider="oracleProvider" >
         <add name="dao_test_oracle" databaseType="Master" sharding="" connectionString="OracleShard_0"/>   
     </databaseSet>

@@ -42,6 +42,9 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     public static final String FROM = " FROM ";
     public static final String WHERE= " WHERE ";
     public static final String AS = " AS ";
+    public static final String ORDER_BY = "ORDER BY ";
+    public static final String ASC = " ASC";
+    public static final String DESC = " DESC";
     public static final String GROUP_BY = " GROUP BY ";
     public static final String HAVING = " HAVING ";
     
@@ -350,6 +353,10 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      */
     public AbstractFreeSqlBuilder where(Object...expressions) {
         return append(WHERE).appendExpressions(expressions);
+    }
+    
+    public AbstractFreeSqlBuilder orderBy(String columnName, boolean ascending){
+        return append(ORDER_BY).append(column(columnName)).appendWhen(ascending, ASC, DESC);
     }
     
     public AbstractFreeSqlBuilder groupBy(String columnName) {

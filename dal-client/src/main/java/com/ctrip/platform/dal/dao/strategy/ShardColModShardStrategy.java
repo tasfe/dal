@@ -1,20 +1,11 @@
 package com.ctrip.platform.dal.dao.strategy;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
-
-import com.ctrip.platform.dal.common.enums.ParameterDirection;
-import com.ctrip.platform.dal.dao.DalHintEnum;
-import com.ctrip.platform.dal.dao.DalHints;
-import com.ctrip.platform.dal.dao.StatementParameter;
-import com.ctrip.platform.dal.dao.StatementParameters;
-import com.ctrip.platform.dal.dao.configure.DalConfigure;
 
 /**
  * This strategy locate both db and table shard by mod shard value.
  * The checking sequency is same for both DB and table shard:
- * IMPORTANT NOTE: The table name and columns are all case sensitive!
+ * 
  * Shard id
  * Shard value
  * Shard column values

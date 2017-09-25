@@ -16,13 +16,15 @@ public abstract class AbstractRWSeparationStrategy implements DalShardingStrateg
 	 * @param logicDbName
 	 * @param hints
 	 * @return
+	 * @deprecated should use locateTableShard with table name parameter
 	 */
 	public String locateTableShard(DalConfigure configure, String logicDbName, DalHints hints) {
 	    return null;
 	}
 	
 	/**
-	 * Call the old way of getting table shard id to make sure subclass compiles ok.
+	 * Call the old way of getting table shard id to make sure subclass compiles ok and not 
+	 * break existing logic
 	 */
 	public String locateTableShard(DalConfigure configure, String logicDbName, String tabelName, DalHints hints) {
 	    return locateTableShard(configure, logicDbName, hints);

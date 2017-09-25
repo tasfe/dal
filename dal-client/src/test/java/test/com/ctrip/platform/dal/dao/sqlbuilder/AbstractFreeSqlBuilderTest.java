@@ -234,6 +234,15 @@ public class AbstractFreeSqlBuilderTest {
     }
     
     @Test
+    public void testOrderBy() {
+        AbstractFreeSqlBuilder test = createDisabled();
+        test.orderBy(template, true);
+        test.setLogicDbName(logicDbName);
+        test.setHints(new DalHints());
+        assertEquals("ORDER BY " + wrappedTemplate + " ASC", test.build());
+    }
+    
+    @Test
     public void testGroupBy() {
         AbstractFreeSqlBuilder test = createDisabled();
         test.groupBy(template);

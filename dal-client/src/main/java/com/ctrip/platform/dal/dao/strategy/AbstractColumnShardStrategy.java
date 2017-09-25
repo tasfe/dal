@@ -11,6 +11,14 @@ import com.ctrip.platform.dal.dao.StatementParameter;
 import com.ctrip.platform.dal.dao.StatementParameters;
 import com.ctrip.platform.dal.dao.configure.DalConfigure;
 
+/**
+ * This is the base class for similar strategy that uses column/columns to calculate
+ * shard. The implementation is case insensitive for both column names and table names 
+ * to adapt to most situations.  
+ *  
+ * @author jhhe
+ *
+ */
 public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationStrategy implements DalShardingStrategy {
     /**
      * Key used to declared columns for locating DB shard.
@@ -29,14 +37,11 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
     public static final String TABLE_COLUMNS = "tableColumns";
     private static final String TABLE_COLUMNS_CSHARP = "tableColumn";
     
-    public static final String TABLE_MOD = "tableMod";
-
     public static final String SEPARATOR = "separator";
 
-    private String[] columns;
-
-    private Set<String> shardedTables = new HashSet<String>();
-    private String[] tableColumns;
+    private String[] columnNames;
+    private Set<String> shardedTables = new HashSet<>();
+    private String[] tableColumnNames;
     private String separator;
     
     /**
@@ -45,24 +50,24 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
      */
     public void initialize(Map<String, String> settings) {
         if(settings.containsKey(COLUMNS)) {
-            columns = settings.get(COLUMNS).split(",");
+            columnNames = parseNames(settings.get(COLUMNS));
         }else {
             if(settings.containsKey(COLUMNS_CSHARP)) {
-                columns = settings.get(COLUMNS_CSHARP).split(",");
+                columnNames = parseNames(settings.get(COLUMNS_CSHARP));
             }
         }
         
         if(settings.containsKey(SHARDED_TABLES)) {
-            String[] tables = settings.get(SHARDED_TABLES).split(",");
+            String[] tables = parseNames(settings.get(SHARDED_TABLES));
             for(String table: tables)
                 shardedTables.add(table);
         }
         
         if(settings.containsKey(TABLE_COLUMNS)) {
-            tableColumns = settings.get(TABLE_COLUMNS).split(",");
+            tableColumnNames = parseNames(settings.get(TABLE_COLUMNS));
         }else {
             if(settings.containsKey(TABLE_COLUMNS_CSHARP)) {
-                tableColumns = settings.get(TABLE_COLUMNS_CSHARP).split(",");
+                tableColumnNames = parseNames(settings.get(TABLE_COLUMNS_CSHARP));
             }
         }
         
@@ -70,10 +75,17 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
             separator = settings.get(SEPARATOR);
         }
     }
+    
+    private String[] parseNames(String value) {
+        String[] names = value.split(",");
+        for(int i = 0; i < names.length; i++)
+            names[i] = names[i].toLowerCase().trim();
+        return names;
+    }
 
     @Override
     public boolean isShardingByDb() {
-        return columns != null;
+        return columnNames != null;
     }
     
     /**
@@ -104,15 +116,15 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
             return calculateDbShard(hints.get(DalHintEnum.shardValue));
         }
         
-        shard = evaluateDbShard(columns, (Map<String, ?>)hints.get(DalHintEnum.shardColValues));
+        shard = evaluateDbShard(columnNames, (Map<String, ?>)hints.get(DalHintEnum.shardColValues));
         if(shard != null)
             return shard;
         
-        shard = evaluateDbShard(columns, (StatementParameters)hints.get(DalHintEnum.parameters));
+        shard = evaluateDbShard(columnNames, (StatementParameters)hints.get(DalHintEnum.parameters));
         if(shard != null)
             return shard;
         
-        shard = evaluateDbShard(columns, (Map<String, ?>)hints.get(DalHintEnum.fields));
+        shard = evaluateDbShard(columnNames, (Map<String, ?>)hints.get(DalHintEnum.fields));
         if(shard != null)
             return shard;
         
@@ -121,7 +133,7 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
 
     @Override
     public boolean isShardingByTable() {
-        return tableColumns != null;
+        return tableColumnNames != null;
     }
 
     @Override
@@ -136,18 +148,18 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
         
         // Shard value take the highest priority
         if(hints.is(DalHintEnum.tableShardValue)) {
-            return calculateDbShard(hints.get(DalHintEnum.tableShardValue));
+            return calculateTableShard(hints.get(DalHintEnum.tableShardValue));
         }
         
-        shard = evaluateTableShard(tableColumns, (Map<String, ?>)hints.get(DalHintEnum.shardColValues));
+        shard = evaluateTableShard(tableColumnNames, (Map<String, ?>)hints.get(DalHintEnum.shardColValues));
         if(shard != null)
             return shard;
         
-        shard = evaluateTableShard(tableColumns, (StatementParameters)hints.get(DalHintEnum.parameters));
+        shard = evaluateTableShard(tableColumnNames, (StatementParameters)hints.get(DalHintEnum.parameters));
         if(shard != null)
             return shard;
         
-        shard = evaluateTableShard(tableColumns, (Map<String, ?>)hints.get(DalHintEnum.fields));
+        shard = evaluateTableShard(tableColumnNames, (Map<String, ?>)hints.get(DalHintEnum.fields));
         if(shard != null)
             return shard;
         
@@ -213,7 +225,7 @@ public abstract class AbstractColumnShardStrategy extends AbstractRWSeparationSt
     
     @Override
     public boolean isShardingEnable(String tableName) {
-        return shardedTables.contains(tableName);
+        return shardedTables.contains(tableName.toLowerCase());
     }
 
     @Override
