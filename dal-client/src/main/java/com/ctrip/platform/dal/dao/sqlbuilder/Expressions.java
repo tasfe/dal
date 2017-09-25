@@ -1,7 +1,6 @@
 package com.ctrip.platform.dal.dao.sqlbuilder;
 
 import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractSqlBuilder.wrapField;
-import static com.ctrip.platform.dal.dao.sqlbuilder.AbstractFreeSqlBuilder.expression;
 
 import java.util.Objects;
 
@@ -36,11 +35,11 @@ public class Expressions {
         return list.add(leftBracket).add(clauses).add(rightBracket);
     }
 
-    public static Operator AND = new Operator(" AND ");
+    public static final Operator AND = new Operator(" AND ");
     
-    public static Operator OR = new Operator(" OR ");
+    public static final Operator OR = new Operator(" OR ");
     
-    public static Operator NOT = new Operator(" NOT ");
+    public static final Operator NOT = new Operator(" NOT ");
     
     public static Expression equal(String columnName) {
         return createColumnExpression("%s = ?", columnName);
@@ -109,7 +108,7 @@ public class Expressions {
             return true;
         }
         
-        public boolean isClause() {
+        public boolean isRemovable() {
             return this == NOT;
         }        
     }
@@ -141,8 +140,9 @@ public class Expressions {
             this.template = template;
         }
         
-        public void nullable(Object o) {
+        public Expression nullable(Object o) {
             nullValue = (o == null);
+            return this;
         }
         
         public boolean isNull() {

@@ -578,6 +578,15 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return append(Expressions.isNotNull(columnName));
     }
     
+    private interface ClauseClassifier {
+        boolean isRemovable();
+        boolean isNull();
+        boolean isBracket();
+        boolean isLeft();
+        boolean isOperator();
+        String build() throws SQLException;
+    }
+    
     /**
      * Because certain infomation may not be in place during sql construction,
      * the build process is separated into two phases. One is preparing: setBuilderCOntext(), this 
@@ -613,7 +622,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return context.getParameters();
         }
 
-        public boolean isClause() {
+        public boolean isRemovable() {
             return true;
         }
 
@@ -675,7 +684,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             this.template =template;
         }
         
-        public boolean isClause() {
+        public boolean isRemovable() {
             return false;
         }
 
@@ -701,7 +710,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return this;
         }
         
-        public boolean isClause() {
+        public boolean isRemovable() {
             return false;
         }
         
@@ -733,7 +742,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return this;
         }
         
-        public boolean isClause() {
+        public boolean isRemovable() {
             return false;
         }
         
@@ -765,7 +774,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     private static class SqlServerWithNoLock extends Clause {
         private static final String SQL_SERVER_NOLOCK = "WITH (NOLOCK)";
 
-        public boolean isClause() {
+        public boolean isRemovable() {
             return false;
         }
         
@@ -854,7 +863,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         LinkedList<Clause> filtered = new LinkedList<>();
         
         for(Clause entry: clauseList) {
-            if(entry.isClause() && entry.isNull()){
+            if(entry.isRemovable() && entry.isNull()){
                 meltDownNullValue(filtered);
                 continue;
             }
@@ -865,7 +874,7 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             }
             
             // AND/OR
-            if(entry.isOperator() && !entry.isClause()) {
+            if(entry.isOperator() && !entry.isRemovable()) {
                 if(meltDownAndOrOperator(filtered))
                     continue;
             }
@@ -876,21 +885,17 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         return filtered;
     }
     
-    private interface ClauseClassifier {
-        boolean isClause();
-        boolean isNull();
-        boolean isBracket();
-        boolean isLeft();
-        boolean isOperator();
-        String build() throws SQLException;
-    }
-    
     private boolean meltDownAndOrOperator(LinkedList<Clause> filtered) {
         // If it is the first element
         if(filtered.isEmpty())
             return true;
 
         ClauseClassifier entry = filtered.getLast();
+
+        // If it is not a removable clause. Reach the beginning of the meltdown section
+        if(!entry.isRemovable())
+            return true;
+
         // The last one is "("
         if(entry.isBracket() && entry.isLeft())
             return true;
@@ -932,5 +937,5 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             }else
                 break;
         }
-    }
+}
 }
