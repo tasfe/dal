@@ -249,6 +249,17 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     }
     
     /**
+     * Append as column with alias. The column name will be quoted by database specific char.
+     * 
+     * @param columnNames 
+     * @param alias
+     * @return
+     */
+    public AbstractFreeSqlBuilder appendColumn(String columnName, String alias) {
+        return append(column(columnName).as(alias));
+    }
+    
+    /**
      * Append as Table. Same as append(table(tableName)).
      * 
      * The tableName will be replaced by true table name if it is a logic table that allow shard.
@@ -258,6 +269,19 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
      */
     public AbstractFreeSqlBuilder appendTable(String tableName) {
         return append(table(tableName));
+    }
+    
+    /**
+     * Append as Table with alias. Same as append(table(tableName)).
+     * 
+     * The tableName will be replaced by true table name if it is a logic table that allow shard.
+     * 
+     * @param tableName table name. The table can be sharded
+     * @param alias
+     * @return
+     */
+    public AbstractFreeSqlBuilder appendTable(String tableName, String alias) {
+        return append(table(tableName).as(alias));
     }
     
     /**
@@ -732,11 +756,17 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
     
     public static class Table extends Clause{
         private String rawTableName;
+        private String alias;
         private String tableShardId;
         private Object tableShardValue;
         
         public Table(String rawTableName) {
             this.rawTableName = rawTableName;
+        }
+        
+        public Table(String rawTableName, String alias) {
+            this(rawTableName);
+            this.alias = alias;
         }
         
         public Table inShard(String tableShardId) {
@@ -749,6 +779,11 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
             return this;
         }
         
+        public Table as(String alias) {
+            this.alias = alias;
+            return this;
+        }
+        
         public boolean isRemovable() {
             return false;
         }
@@ -757,18 +792,18 @@ public class AbstractFreeSqlBuilder implements SqlBuilder {
         public String build() throws SQLException {
             String logicDbName = getLogicDbName();
             DatabaseCategory dbCategory = getDbCategory();
+            String tableName = null;
 
             if(!isTableShardingEnabled(logicDbName, rawTableName))
-                return wrapField(dbCategory, rawTableName);
+                tableName = wrapField(dbCategory, rawTableName);
+            else if(tableShardId!= null)
+                tableName = wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, tableShardId));
+            else if(tableShardValue != null) {
+                tableName = wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, new DalHints().setTableShardValue(tableShardValue), null, null)));
+            }else
+                tableName = wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, getHints(), getParameters(), null)));
             
-            if(tableShardId!= null)
-                return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, tableShardId));
-            
-            if(tableShardValue != null) {
-                return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, new DalHints().setTableShardValue(tableShardValue), null, null)));
-            }
-                
-            return wrapField(dbCategory, rawTableName + buildShardStr(logicDbName, locateTableShardId(logicDbName, rawTableName, getHints(), getParameters(), null)));
+            return alias == null ? tableName : tableName + " AS " + alias;
         }
     }
     

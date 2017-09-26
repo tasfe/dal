@@ -10,6 +10,8 @@ import junit.framework.Assert;
 import org.junit.Test;
 
 import com.ctrip.platform.dal.common.enums.DatabaseCategory;
+import com.ctrip.platform.dal.dao.StatementParameters;
+import com.ctrip.platform.dal.dao.sqlbuilder.MatchPattern;
 import com.ctrip.platform.dal.dao.sqlbuilder.SelectSqlBuilder;
 
 public class SelectSqlBuilderTest {
@@ -793,4 +795,153 @@ public class SelectSqlBuilderTest {
 		Assert.assertEquals(expect_sql, sql);
 		
 	}
+	
+    @Test
+    public void testMySQLNotIn() throws SQLException {
+        List<String> in = new ArrayList<String>();
+        in.add("12");
+        in.add("12");
+        
+        List<String> notIn = new ArrayList<String>();
+        notIn.add("123");
+        notIn.add("123");
+        
+        SelectSqlBuilder builder = new SelectSqlBuilder();
+        
+        builder.selectCount();
+        
+        builder.equal("a", "paramValue", Types.INTEGER);
+        builder.and().in("b", in, Types.INTEGER);
+        builder.and().notIn("c", notIn, Types.INTEGER);
+        builder.and().like("b", "in", Types.INTEGER);
+        builder.and().betweenNullable("c", "paramValue1", "paramValue2", Types.INTEGER);
+        builder.and().betweenNullable("d", null, "paramValue2", Types.INTEGER);
+        builder.and().isNull("sss");
+        builder.orderBy("PeopleID", false);
+        
+        builder.requireFirst();
+        builder.from("People").setDatabaseCategory(DatabaseCategory.MySql);
+        String sql = builder.build();
+        
+        String expect_sql = "SELECT COUNT(1) FROM `People` "
+                + "WHERE `a` = ? AND `b` in ( ? ) AND `c` not in ( ? ) AND `b` LIKE ? AND `c` BETWEEN ? AND ? "
+                + "AND `sss` IS NULL ORDER BY `PeopleID` DESC LIMIT 1";
+        
+        Assert.assertEquals(expect_sql, sql);
+    }
+
+    @Test
+    public void testSQLServerNotIn() throws SQLException {
+        List<String> in = new ArrayList<String>();
+        in.add("12");
+        in.add("12");
+        
+        List<String> notIn = new ArrayList<String>();
+        notIn.add("123");
+        notIn.add("123");
+        
+        SelectSqlBuilder builder = new SelectSqlBuilder();
+        
+        builder.selectCount();
+        
+        builder.equal("a", "paramValue", Types.INTEGER);
+        builder.and().in("b", in, Types.INTEGER);
+        builder.and().notIn("c", notIn, Types.INTEGER);
+        builder.or().notInNullable("c", new ArrayList<>(), Types.INTEGER);
+        builder.and().like("b", "in", Types.INTEGER);
+        builder.and().betweenNullable("c", "paramValue1", "paramValue2", Types.INTEGER);
+        builder.and().betweenNullable("d", null, "paramValue2", Types.INTEGER);
+        builder.and().isNull("sss");
+        builder.orderBy("PeopleID", false);
+        
+        builder.from("People").setDatabaseCategory(DatabaseCategory.SqlServer);
+        String sql = builder.build();
+        
+        String expect_sql = "SELECT COUNT(1) FROM [People] WITH (NOLOCK) "
+                + "WHERE [a] = ? AND [b] in ( ? ) AND [c] not in ( ? ) AND [b] LIKE ? AND [c] BETWEEN ? AND ? "
+                + "AND [sss] IS NULL ORDER BY [PeopleID] DESC";
+       
+        Assert.assertEquals(expect_sql, sql);
+    }
+    
+    @Test
+    public void testMySQLLike() throws SQLException {
+        List<String> in = new ArrayList<String>();
+        in.add("12");
+        in.add("12");
+        
+        List<String> notIn = new ArrayList<String>();
+        notIn.add("123");
+        notIn.add("123");
+        
+        SelectSqlBuilder builder = new SelectSqlBuilder();
+        
+        builder.selectCount();
+        
+        builder.and().like("b", "in", MatchPattern.none, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.head, Types.INTEGER);
+        builder.and().likeNullable("b", null, MatchPattern.none, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.tail, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.both, Types.INTEGER);
+        builder.and().like("b", "in", Types.INTEGER);
+        builder.and().likeNullable("b", null, MatchPattern.both, Types.INTEGER);
+        builder.orderBy("PeopleID", false);
+        
+        builder.requireFirst();
+        builder.from("People").setDatabaseCategory(DatabaseCategory.MySql);
+        String sql = builder.build();
+        
+        String expect_sql = "SELECT COUNT(1) FROM `People` "
+                + "WHERE `b` LIKE ? AND `b` LIKE ? AND `b` LIKE ? AND `b` LIKE ? AND `b` LIKE ? ORDER BY `PeopleID` DESC LIMIT 1";
+        
+        Assert.assertEquals(expect_sql, sql);
+        
+        StatementParameters p = builder.buildParameters();
+        int i = 0;
+        Assert.assertEquals("in", p.get(i++).getValue());
+        Assert.assertEquals("%in", p.get(i++).getValue());
+        Assert.assertEquals("in%", p.get(i++).getValue());
+        Assert.assertEquals("%in%", p.get(i++).getValue());
+        Assert.assertEquals("in", p.get(i++).getValue());
+    }
+
+    @Test
+    public void testSQLServerLike() throws SQLException {
+        List<String> in = new ArrayList<String>();
+        in.add("12");
+        in.add("12");
+        
+        List<String> notIn = new ArrayList<String>();
+        notIn.add("123");
+        notIn.add("123");
+        
+        SelectSqlBuilder builder = new SelectSqlBuilder();
+        
+        builder.selectCount();
+        
+        builder.and().like("b", "in", MatchPattern.none, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.head, Types.INTEGER);
+        builder.and().likeNullable("b", null, MatchPattern.none, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.tail, Types.INTEGER);
+        builder.and().like("b", "in", MatchPattern.both, Types.INTEGER);
+        builder.and().like("b", "in", Types.INTEGER);
+        builder.and().likeNullable("b", null, MatchPattern.both, Types.INTEGER);
+        builder.orderBy("PeopleID", false);
+        
+        builder.from("People").setDatabaseCategory(DatabaseCategory.SqlServer);
+        String sql = builder.build();
+        
+        String expect_sql = "SELECT COUNT(1) FROM [People] WITH (NOLOCK) "
+                + "WHERE [b] LIKE ? AND [b] LIKE ? AND [b] LIKE ? AND [b] LIKE ? AND [b] LIKE ? ORDER BY [PeopleID] DESC";
+       
+        Assert.assertEquals(expect_sql, sql);
+        
+        StatementParameters p = builder.buildParameters();
+        int i = 0;
+        Assert.assertEquals("in", p.get(i++).getValue());
+        Assert.assertEquals("%in", p.get(i++).getValue());
+        Assert.assertEquals("in%", p.get(i++).getValue());
+        Assert.assertEquals("%in%", p.get(i++).getValue());
+        Assert.assertEquals("in", p.get(i++).getValue());
+   }
 }

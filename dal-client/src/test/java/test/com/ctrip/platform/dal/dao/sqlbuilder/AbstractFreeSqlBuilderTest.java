@@ -163,6 +163,16 @@ public class AbstractFreeSqlBuilderTest {
         test.appendColumn(template);
         test.setLogicDbName(logicDbName);
         assertEquals("[" + template + "]", test.build());
+        
+        test = createDisabled();
+        test.appendColumn(template, template);
+        test.setLogicDbName(logicDbName);
+        assertEquals("[" + template + "] AS " + template, test.build());
+
+        test = createDisabled();
+        test.append(column(template).as(template));
+        test.setLogicDbName(logicDbName);
+        assertEquals("[" + template + "] AS " + template, test.build());
     }
     
     @Test
@@ -180,7 +190,20 @@ public class AbstractFreeSqlBuilderTest {
         test.setLogicDbName(logicDbName);
         test.setHints(new DalHints().inTableShard(1));
         assertEquals("[" + tableName + "_1]", test.build());
+        
+        test = createDisabled();
+        test.appendTable(tableName, template);
+        test.setLogicDbName(logicDbName);
+        test.setHints(new DalHints().inTableShard(1));
+        assertEquals("[" + tableName + "_1] AS " + template, test.build());
+
+        test = createDisabled();
+        test.append(table(tableName).as(template));
+        test.setLogicDbName(logicDbName);
+        test.setHints(new DalHints().inTableShard(1));
+        assertEquals("[" + tableName + "_1] AS " + template, test.build());
     }
+    
     @Test
     public void testSelect() {
         String noShardTable = "noShard";

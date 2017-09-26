@@ -450,34 +450,160 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 	}
 
 	/**
-	 *  Like操作，且字段值不能为NULL，否则会抛出SQLException
+	 *  Like操作，且字段值不能为NULL，否则会抛出SQLException. 
+	 *  
+	 *  Please make sure there is "%" at certain place in the parameter. 
+	 *  If there is no "%", DAL will not auto append any "%" in the original prameter.
+	 *  In this case, like work exactly as equal expression.
+	 *  
+	 *  If you don't want to add "%" in the parameter by yourself, you can use the other 
+	 *  like method with MatchPattern parameter.
+	 *   
 	 * @param field 字段
-	 * @param paramValue 字段值
+	 * @param paramValue 字段值, paramValue should contain "%" at the begining, end or in the middle.
 	 * @return
 	 * @throws SQLException
+	 * @Deprecated just a marker to catch your eye about the usage notification
 	 */
 	public AbstractSqlBuilder like(String field, Object paramValue, int sqlType) throws SQLException {
 		return like(field, paramValue, sqlType, DEFAULT_SENSITIVE);
 	}
 	
+    /**
+     *  Like操作，且字段值不能为NULL，否则会抛出SQLException. 
+     *  
+     *  Please make sure there is "%" at certain place in the parameter. 
+     *  If there is no "%", DAL will not auto append any "%" in the original prameter.
+     *  In this case, like work exactly as equal expression.
+     *  
+     *  If you don't want to add "%" in the parameter by yourself, you can use the other 
+     *  like method with MatchPattern parameter.
+     *   
+     * @param field 字段
+     * @param paramValue 字段值, paramValue should contain "%" at the begining, end or in the middle.
+     * @param sensitive if the parameter will be replaced by "*" in the log output.
+     * @return
+     * @throws SQLException
+     * @Deprecated just a marker to catch your eye about the usage notification
+     */
 	public AbstractSqlBuilder like(String field, Object paramValue, int sqlType, boolean sensitive) throws SQLException {
 		return addParam(field, "LIKE", paramValue, sqlType, sensitive);
 	}
 	
 	/**
 	 *  Like操作，若字段值为NULL，则此条件不会加入SQL中
+	 *  
+     *  Please make sure there is "%" at certain place in the parameter. 
+     *  If there is no "%", DAL will not auto append any "%" in the original prameter.
+     *  In this case, like work exactly as equal expression.
+     *  
+     *  If you don't want to add "%" in the parameter by yourself, you can use the other 
+     *  like method with MatchPattern parameter.
+     *  
 	 * @param field 字段
-	 * @param paramValue 字段值
+	 * @param paramValue 字段值, paramValue should contain "%" at the begining, end or in the middle.
 	 * @return
 	 * @throws SQLException
+     * @Deprecated just a marker to catch your eye about the usage notification
 	 */
 	public AbstractSqlBuilder likeNullable(String field, Object paramValue, int sqlType) {
 		return likeNullable(field, paramValue, sqlType, DEFAULT_SENSITIVE);
 	}
-	
+
+    /**
+     *  Like操作，若字段值为NULL，则此条件不会加入SQL中
+     *  
+     *  Please make sure there is "%" at certain place in the parameter. 
+     *  If there is no "%", DAL will not auto append any "%" in the original prameter.
+     *  In this case, like work exactly as equal expression.
+     *  
+     *  If you don't want to add "%" in the parameter by yourself, you can use the other 
+     *  like method with MatchPattern parameter.
+     *  
+     * @param field 字段
+     * @param paramValue 字段值, paramValue should contain "%" at the begining, end or in the middle.
+     * @param sensitive if the parameter will be replaced by "*" in the log output.
+     * @return
+     * @throws SQLException
+     * @Deprecated just a marker to catch your eye about the usage notification
+     */	
 	public AbstractSqlBuilder likeNullable(String field, Object paramValue, int sqlType, boolean sensitive) {
 		return addParamNullable(field, "LIKE", paramValue, sqlType, sensitive);
 	}
+
+    /**
+     *  Like操作，且字段值不能为NULL，否则会抛出SQLException
+     *  
+     *  Dal will append or insert "%" to the original parameter follow what is specified by pattern.
+     *  
+     *  If you want to control how "%" is added for maximal flexibility, you can use the other 
+     *  like method without MatchPattern parameter.
+     *  
+     * @param field 字段
+     * @param paramValue 字段值
+     * @param pattern how DAL will append "%" for the input paramValue
+     * @return
+     * @throws SQLException
+     */
+    public AbstractSqlBuilder like(String field, Object paramValue, MatchPattern pattern, int sqlType) throws SQLException {
+        return like(field, paramValue, pattern, sqlType, DEFAULT_SENSITIVE);
+    }
+    
+    /**
+     *  Like操作，且字段值不能为NULL，否则会抛出SQLException
+     *  
+     *  Dal will append or insert "%" to the original parameter follow what is specified by pattern.
+     *  
+     *  If you want to control how "%" is added for maximal flexibility, you can use the other 
+     *  like method without MatchPattern parameter.
+     *  
+     * @param field 字段
+     * @param paramValue 字段值
+     * @param pattern how DAL will append "%" for the input paramValue
+     * @param sensitive if the parameter will be replaced by "*" in the log output.
+     * @return
+     * @throws SQLException
+     */
+    public AbstractSqlBuilder like(String field, Object paramValue, MatchPattern pattern, int sqlType, boolean sensitive) throws SQLException {
+        return addParam(field, "LIKE", process(paramValue, pattern), sqlType, sensitive);
+    }
+    
+    /**
+     *  Like操作，若字段值为NULL，则此条件不会加入SQL中
+     *  
+     *  Dal will append or insert "%" to the original parameter follow what is specified by pattern.
+     *  
+     *  If you want to control how "%" is added for maximal flexibility, you can use the other 
+     *  like method without MatchPattern parameter.
+     *  
+     * @param field 字段
+     * @param paramValue 字段值
+     * @param pattern how DAL will append "%" for the input paramValue
+     * @return
+     * @throws SQLException
+     */
+    public AbstractSqlBuilder likeNullable(String field, Object paramValue, MatchPattern pattern, int sqlType) {
+        return likeNullable(field, paramValue, pattern, sqlType, DEFAULT_SENSITIVE);
+    }
+    
+    /**
+     *  Like操作，若字段值为NULL，则此条件不会加入SQL中
+     *  
+     *  Dal will append or insert "%" to the original parameter follow what is specified by pattern.
+     *  
+     *  If you want to control how "%" is added for maximal flexibility, you can use the other 
+     *  like method without MatchPattern parameter.
+     *  
+     * @param field 字段
+     * @param paramValue 字段值
+     * @param pattern how DAL will append "%" for the input paramValue
+     * @param sensitive if the parameter will be replaced by "*" in the log output.
+     * @return
+     * @throws SQLException
+     */
+    public AbstractSqlBuilder likeNullable(String field, Object paramValue, MatchPattern pattern, int sqlType, boolean sensitive) {
+        return addParamNullable(field, "LIKE", process(paramValue, pattern), sqlType, sensitive);
+    }
 
 	/**
 	 *  In操作，且字段值不能为NULL，否则会抛出SQLException
@@ -531,7 +657,59 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 		return addInParam(field, paramValues, sqlType, sensitive);
 	}
 	
-	/**
+    /**
+     *  In操作，且字段值不能为NULL，否则会抛出SQLException
+     * @param field 字段
+     * @param paramValues 字段值
+     * @return
+     * @throws SQLException
+     */
+    public AbstractSqlBuilder notIn(String field, List<?> paramValues, int sqlType) throws SQLException {
+        return notIn(field, paramValues, sqlType, DEFAULT_SENSITIVE);
+    }
+    
+    public AbstractSqlBuilder notIn(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
+        if(null == paramValues || paramValues.size() == 0)
+            throw new SQLException(field + " must have more than one value.");
+
+        for(Object obj:paramValues)
+            if(obj==null)
+                throw new SQLException(field + " is not support null value.");
+
+        return addNotInParam(field, paramValues, sqlType, sensitive);
+    }
+    
+    /**
+     *  In操作，允许参数为NULL，或者字段值为NULL, 或者传入的字段值数量为0。
+     * @param field 字段
+     * @param paramValues 字段值
+     * @return
+     * @throws SQLException
+     */
+    public AbstractSqlBuilder notInNullable(String field, List<?> paramValues, int sqlType) throws SQLException {
+        return notInNullable(field, paramValues, sqlType, DEFAULT_SENSITIVE);
+    }
+    
+    public AbstractSqlBuilder notInNullable(String field, List<?> paramValues, int sqlType, boolean sensitive) throws SQLException {
+        if(null == paramValues || paramValues.size() == 0){
+            return add(new NullValueClauseEntry());
+        }
+        
+        Iterator<?> ite = paramValues.iterator();
+        while(ite.hasNext()){
+            if(ite.next()==null){
+                ite.remove();
+            }
+        }
+        
+        if(paramValues.size() == 0){
+            return add(new NullValueClauseEntry());
+        }
+        
+        return addNotInParam(field, paramValues, sqlType, sensitive);
+    }
+    
+    /**
 	 * Is null操作
 	 * @param field 字段
 	 * @return
@@ -574,6 +752,10 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 		return add(new InClauseEntry(field, paramValues, sqlType, sensitive, whereFieldEntrys, compatible));
 	}
 	
+    private AbstractSqlBuilder addNotInParam(String field, List<?> paramValues, int sqlType, boolean sensitive){
+        return add(new InClauseEntry(field, paramValues, sqlType, sensitive, whereFieldEntrys, compatible).setNotIn());
+    }
+    
 	private AbstractSqlBuilder addParam(String field, String condition, Object paramValue, int sqlType, boolean sensitive) throws SQLException{
 		if(paramValue == null)
 			throw new SQLException(field + " is not support null value.");	
@@ -586,6 +768,26 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 			return add(new NullValueClauseEntry());
 		
 		return add(new SingleClauseEntry(field, condition, paramValue, sqlType, sensitive, whereFieldEntrys));
+	}
+	
+	private String process(Object value, MatchPattern pattern) {
+	    if(value == null)
+	        return null;
+	    
+	    String valueStr = value instanceof String ? (String)value : value.toString();
+	    
+	    switch (pattern) {
+            case head:
+                return "%" + valueStr;
+            case tail:
+                return valueStr + "%";
+            case both:
+                return "%" + valueStr + "%";
+            case none:
+                return valueStr;
+            default:
+                throw new IllegalStateException("Not supported yet");
+        }
 	}
 	
 	private static abstract class WhereClauseEntry {
@@ -672,7 +874,9 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 		private String field;
 		private String questionMarkList;
 		private boolean compatible;
+		private boolean isNot = false;
 		private static final String IN_CLAUSE = " in ( ? )";
+		private static final String NOT_IN_CLAUSE = " not in ( ? )";
 		private List<FieldEntry> entries;
 		
 		public InClauseEntry(String field, List<?> paramValues, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys, boolean compatible){
@@ -686,9 +890,14 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 			}
 		}
 		
+		public InClauseEntry setNotIn() {
+		    isNot = true;
+		    return this;
+		}
+		
 		private void create(String field, List<?> paramValues, int sqlType, boolean sensitive, List<FieldEntry> whereFieldEntrys){
 			StringBuilder temp = new StringBuilder();
-			temp.append(" in ( ");
+			temp.append(isNot ? " not in ( ":" in ( ");
 			
 			entries = new ArrayList<>(paramValues.size());
 			for(int i=0,size=paramValues.size();i<size;i++){
@@ -711,7 +920,7 @@ public abstract class AbstractSqlBuilder implements TableSqlBuilder {
 		public String getClause(DatabaseCategory dbCategory) {
 			return compatible ?
 					wrapField(dbCategory, field) + questionMarkList:
-						wrapField(dbCategory, field) + IN_CLAUSE;
+						wrapField(dbCategory, field) + (isNot ? NOT_IN_CLAUSE:IN_CLAUSE);
 		}
 	}
 	

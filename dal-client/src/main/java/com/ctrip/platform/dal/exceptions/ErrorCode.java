@@ -201,8 +201,4 @@ public enum ErrorCode {
 	public ErrorClassify getErrorClassify(){
 		return this.classify;
 	}
-	
-	public static void main(String[] args) {
-        System.out.println("https://github.com/ctripcorp/dal/wiki/Java%E5%AE%A2%E6%88%B7%E7%AB%AF-Hints%E8%AF%B4%E6%98%8E#allowpartial");
-    }
 }
